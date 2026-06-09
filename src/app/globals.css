@@ -53,12 +53,13 @@ select {
   align-items: center;
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 12px;
   box-shadow: var(--shadow-soft);
   display: flex;
-  gap: 14px;
+  gap: 16px;
   justify-content: space-between;
-  padding: 10px 12px;
+  min-height: 60px;
+  padding: 10px;
   position: sticky;
   top: 8px;
   z-index: 20;
@@ -67,47 +68,69 @@ select {
 .brand {
   align-items: center;
   display: flex;
-  gap: 12px;
+  gap: 10px;
+  min-width: 0;
 }
 
 .brand-mark {
   align-items: center;
   background: var(--brand-blue);
-  border-radius: 8px;
+  border-radius: 10px;
   color: #fff;
   display: inline-flex;
-  font-weight: 800;
-  height: 36px;
+  flex: 0 0 auto;
+  font-size: 1rem;
+  font-weight: 900;
+  height: 40px;
   justify-content: center;
-  width: 36px;
+  width: 40px;
 }
 
-.brand h1 {
-  font-size: clamp(1rem, 1.5vw, 1.2rem);
-  line-height: 1.1;
-  margin: 0;
+.brand-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
 }
 
-.brand p {
+.brand-copy strong {
+  color: var(--brand-blue-700);
+  font-size: 1rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.brand-copy small {
   color: var(--muted);
-  font-size: 0.82rem;
-  margin: 3px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nav {
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 3px;
+  white-space: nowrap;
 }
 
 .nav a,
 .pill {
-  border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 8px;
   color: var(--brand-blue);
-  font-size: 0.84rem;
-  font-weight: 700;
-  padding: 7px 11px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 7px 12px;
+}
+
+.nav a:hover {
+  background: #fff;
+  box-shadow: var(--shadow-soft);
 }
 
 .eyebrow {
@@ -1340,6 +1363,24 @@ select {
   .section-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .topbar {
+    gap: 10px;
+  }
+
+  .brand {
+    width: 100%;
+  }
+
+  .nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .nav a {
+    text-align: center;
   }
 
   .console-header,
