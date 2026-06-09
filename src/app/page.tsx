@@ -2,6 +2,7 @@ import { AarSimulationModule } from '@/components/AarSimulationModule';
 import { AppHeader } from '@/components/AppHeader';
 import { IntegrationMap } from '@/components/IntegrationMap';
 import { MetricCard } from '@/components/MetricCard';
+import { UavSimulationModule } from '@/components/UavSimulationModule';
 import { UavOptimizationPanel } from '@/components/UavOptimizationPanel';
 import { aarCapabilities, integrationMap, pythrustModules, roadmap } from '@/data/platform';
 
@@ -66,6 +67,8 @@ export default function Home() {
           </div>
         </article>
       </section>
+
+      <UavSimulationModule />
 
       <UavOptimizationPanel modules={pythrustModules} />
 
