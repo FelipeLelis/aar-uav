@@ -1,7 +1,7 @@
 export const aarCapabilities = [
   { label: 'AAR', value: 'Ciranda', detail: 'Fluxos pod-asa-aeronave, fila, pausas e bingo fuel.' },
-  { label: 'UAV', value: 'Propulsao', detail: 'Motor brushless, helice, bateria e perfil de missao.' },
-  { label: 'MDO', value: 'Otimizacao', detail: 'Busca de configuracoes por autonomia, empuxo, eficiencia e massa.' },
+  { label: 'UAV', value: 'Propulsão', detail: 'Motor brushless, hélice, bateria e perfil de missão.' },
+  { label: 'MDO', value: 'Parâmetros', detail: 'Busca por autonomia, empuxo, eficiência, massa e restrições.' },
 ];
 
 export const integrationMap = [
@@ -33,19 +33,19 @@ export const pythrustModules = [
 
 export const roadmap = [
   {
-    title: 'Fase 1 - Plataforma Next',
-    text: 'Separar apresentacao, simulador legado, dados de integracao e documentacao em componentes mantiveis.',
+    title: 'Motor AAR',
+    text: 'Extrair o cálculo temporal para TypeScript, com testes para eventos, bingo, deadlock e threshold.',
   },
   {
-    title: 'Fase 2 - Motor AAR modular',
-    text: 'Extrair o simulador de dentro do HTML para um modulo TypeScript testavel e reutilizavel.',
+    title: 'Visualização',
+    text: 'Substituir a superfície embarcada por componentes React e cena 3D própria do projeto.',
   },
   {
-    title: 'Fase 3 - Ponte PyThrust',
-    text: 'Executar otimizacoes Python via job/API, notebook ou pipeline local, preservando OpenMDAO e bancos reais.',
+    title: 'Ponte PyThrust',
+    text: 'Executar solvers Python por job/API local, mantendo OpenMDAO e bancos reais de motores/hélices.',
   },
   {
-    title: 'Fase 4 - Missao combinada',
-    text: 'Comparar reabastecimento, endurance UAV, swaps de bateria, payload e trajetorias sob a mesma ontologia.',
+    title: 'Missão combinada',
+    text: 'Comparar AAR, endurance UAV, swaps de bateria, payload e trajetórias sob a mesma ontologia.',
   },
 ];

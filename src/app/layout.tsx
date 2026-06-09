@@ -3,8 +3,8 @@ import type { ReactNode } from 'react';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'AAR + UAV Mission Lab',
-  description: 'Plataforma Next para simulacao AAR, ontologia operacional e otimizacao UAV com PyThrust.',
+  title: 'Sistema AAR + UAV',
+  description: 'Sistema de simulacao AAR, ontologia operacional e otimizacao UAV com PyThrust.',
 };
 
 export default function RootLayout({

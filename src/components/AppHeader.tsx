@@ -6,16 +6,14 @@ export function AppHeader() {
       <Link className="brand" href="/">
         <span className="brand-mark">ITA</span>
         <span>
-          <h1>AAR + UAV Mission Lab</h1>
-          <p>Simulacao operacional, ontologia e otimizacao de sistemas aeronauticos.</p>
+          <h1>Sistema AAR + UAV</h1>
+          <p>Sistema de simulação AAR, UAV e otimização de missão.</p>
         </span>
       </Link>
       <nav className="nav" aria-label="Navegacao principal">
-        <Link href="/">Visao integrada</Link>
-        <Link href="/simulador/">Simulador AAR</Link>
-        <a href="https://github.com/YgorLog/sim-aar" target="_blank" rel="noreferrer">
-          Fork original
-        </a>
+        <Link href="/">Console</Link>
+        <Link href="/simulador/">AAR</Link>
+        <a href="#uav">UAV / PyThrust</a>
       </nav>
     </header>
   );

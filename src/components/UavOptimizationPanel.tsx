@@ -16,7 +16,7 @@ export function UavOptimizationPanel({ modules }: UavOptimizationPanelProps) {
           <h2>Da logistica de reabastecimento para co-design de propulsao eletrica.</h2>
         </div>
         <p>
-          A uniao proposta transforma o simulador AAR em uma plataforma de missao:
+          A união dos modelos transforma o simulador AAR em um sistema de análise:
           aeronaves tripuladas, UAVs, combustivel, bateria, payload e catalogos reais
           podem entrar no mesmo processo de decisao.
         </p>

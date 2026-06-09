@@ -1,7 +1,6 @@
-import Link from 'next/link';
+import { AarSimulationModule } from '@/components/AarSimulationModule';
 import { AppHeader } from '@/components/AppHeader';
 import { IntegrationMap } from '@/components/IntegrationMap';
-import { LegacySimulatorFrame } from '@/components/LegacySimulatorFrame';
 import { MetricCard } from '@/components/MetricCard';
 import { UavOptimizationPanel } from '@/components/UavOptimizationPanel';
 import { aarCapabilities, integrationMap, pythrustModules, roadmap } from '@/data/platform';
@@ -11,38 +10,24 @@ export default function Home() {
     <main className="app-shell">
       <AppHeader />
 
-      <section className="hero">
+      <section className="console-header">
         <div>
-          <p className="eyebrow">Instituto Tecnologico de Aeronautica / Mission Lab</p>
-          <h2>Simulacao AAR e otimizacao UAV em uma unica plataforma.</h2>
-          <p className="hero-copy">
-            A proposta evolui o simulador de reabastecimento em ciranda para um
-            laboratorio de missoes: AAR, UAVs eletricos, autonomia, energia,
-            catalogos reais de motores/helices e decisao por restricoes.
-          </p>
-          <div className="actions">
-            <Link className="button primary" href="/simulador/">
-              Abrir simulador AAR
-            </Link>
-            <a className="button secondary" href="#uav">
-              Ver integracao PyThrust
-            </a>
-          </div>
-        </div>
-        <aside className="panel">
-          <h3>Ontologia operacional inicial</h3>
+          <p className="eyebrow">Console de simulação</p>
+          <h2>AAR + UAV</h2>
           <p>
-            O sistema passa a tratar combustivel, bateria, espera, empuxo,
-            catalogo e margem operacional como entidades conectadas por uma
-            mesma linguagem de missao.
+            Ambiente único para estudar reabastecimento em ciranda, consumo em
+            espera, limites de missão e futuras rotinas de otimização UAV via
+            PyThrust.
           </p>
-          <div style={{ marginTop: 14 }}>
-            <IntegrationMap rows={integrationMap} />
-          </div>
+        </div>
+        <aside className="run-state">
+          <span>estado do sistema</span>
+          <strong>em desenvolvimento</strong>
+          <small>AAR ativo · PyThrust acoplado como base local</small>
         </aside>
       </section>
 
-      <section className="section">
+      <section className="section tight">
         <div className="grid cols-3">
           {aarCapabilities.map((capability) => (
             <MetricCard
@@ -55,18 +40,44 @@ export default function Home() {
         </div>
       </section>
 
+      <AarSimulationModule />
+
+      <section className="section technical-grid" id="modelo">
+        <article className="panel">
+          <h3>Ontologia de missão</h3>
+          <p>
+            O mesmo vocabulário cobre combustível, bateria, fila, carga,
+            empuxo, catálogo e margem operacional.
+          </p>
+          <div style={{ marginTop: 14 }}>
+            <IntegrationMap rows={integrationMap} />
+          </div>
+        </article>
+        <article className="panel">
+          <h3>Escopo atual</h3>
+          <p>
+            O módulo AAR está operacional. O PyThrust entra como núcleo Python
+            para catalogar e otimizar sistemas de propulsão elétrica em UAVs.
+          </p>
+          <div className="scope-list">
+            <span>AAR: simulação temporal discreta</span>
+            <span>UAV: motores, hélices, bateria e perfil</span>
+            <span>MDO: objetivos, restrições e busca em catálogos</span>
+          </div>
+        </article>
+      </section>
+
       <UavOptimizationPanel modules={pythrustModules} />
 
-      <section className="section">
+      <section className="section compact-section">
         <div className="section-header">
           <div>
-            <p className="eyebrow">Roadmap tecnico</p>
-            <h2>Migracao incremental, sem perder o simulador funcionando.</h2>
+            <p className="eyebrow">Modularização</p>
+            <h2>Próximas extrações técnicas</h2>
           </div>
           <p>
-            O monolito HTML fica preservado como baseline. A partir dele, cada
-            area vira modulo: UI, motor AAR, ontologia, ponte PyThrust e
-            visualizacao.
+            A prioridade é transformar o simulador em módulos próprios do
+            projeto: motor AAR, visualização, ontologia e ponte PyThrust.
           </p>
         </div>
         <div className="grid cols-2 workflow">
@@ -79,14 +90,12 @@ export default function Home() {
         </div>
       </section>
 
-      <LegacySimulatorFrame />
-
       <footer className="footer">
-        Projeto derivado de{' '}
+        Projeto próprio derivado de{' '}
         <a href="https://github.com/YgorLog/sim-aar" target="_blank" rel="noreferrer">
           YgorLog/sim-aar
         </a>
-        . PyThrust preservado em <code>pythrust/</code> para integracao UAV/MDO.
+        . PyThrust em <code>pythrust/</code> para integração UAV/MDO.
       </footer>
     </main>
   );

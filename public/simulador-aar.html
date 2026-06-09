@@ -1068,6 +1068,104 @@
     margin-top: 18px;
     padding: 13px;
   }
+
+  /* ====== ITA light simulation system theme ====== */
+  :root {
+    --bg: #f5f8fc;
+    --surface: #ffffff;
+    --surface-2: #f1f5f9;
+    --surface-3: #e7eef7;
+    --border: #d6e0eb;
+    --border-soft: rgba(0, 63, 125, 0.14);
+    --text: #122033;
+    --text-dim: #65758a;
+    --amber: #d6a336;
+    --cyan: #003f7d;
+    --green: #1f8f5f;
+    --red: #b3242a;
+    --magenta: #315f97;
+    --yellow: #8a6a12;
+  }
+  body {
+    background-color: var(--bg);
+    background-image:
+      linear-gradient(180deg, #ffffff 0%, #f5f8fc 48%, #edf3f9 100%),
+      linear-gradient(90deg, rgba(0,63,125,0.035) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(0,63,125,0.03) 1px, transparent 1px);
+    background-size: auto, 44px 44px, 44px 44px;
+  }
+  header,
+  .panel,
+  .chart-wrapper,
+  .event-log,
+  .empty-hint,
+  .metric,
+  .study-card,
+  .unit-bar,
+  .tolerance-block,
+  .per-aircraft-list,
+  .sub-block,
+  .suggest-detail,
+  .viz-controls {
+    background: rgba(255,255,255,0.94);
+    border-color: var(--border);
+    box-shadow: none;
+  }
+  .panel,
+  .metric,
+  .chart-wrapper,
+  .event-log,
+  #vizPanel {
+    border-radius: 10px;
+  }
+  .field input,
+  .field select,
+  select.unit-select,
+  .input-with-unit select,
+  .viz-controls select,
+  .display-unit-select,
+  .suggest-folga input,
+  .per-aircraft-row input,
+  .per-aircraft-row select {
+    background: #ffffff;
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .btn {
+    background: var(--cyan);
+    color: #ffffff;
+  }
+  .btn-secondary,
+  .btn-scenario,
+  .btn-suggest,
+  .viz-controls button {
+    background: #e7eef7;
+    color: var(--cyan);
+  }
+  .toggle-group button.active {
+    background: var(--cyan);
+    color: #ffffff;
+  }
+  #vizPanel,
+  canvas#vizCanvas {
+    background: #ffffff;
+  }
+  canvas#vizCanvas {
+    border-color: rgba(0,63,125,0.18);
+  }
+  .subtitle {
+    background: rgba(31,143,95,0.09);
+    border: 1px solid rgba(31,143,95,0.25);
+    border-radius: 999px;
+    color: var(--green);
+    padding: 7px 11px;
+  }
+  .study-item {
+    background: #f6f9fc;
+  }
+  footer {
+    background: rgba(255,255,255,0.8);
+  }
 </style>
 </head>
 <body>

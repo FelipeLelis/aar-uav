@@ -2,7 +2,7 @@
 
 Ferramenta web para simular reabastecimento aéreo em ciranda: uma aeronave **reabastecedora** atende várias **reabastecidas**, modelando os fluxos pod→asa e asa→aeronave, o consumo em espera, os ciclos de pausa/retomada e a análise de threshold operacional.
 
-O projeto agora está migrado para **Next.js** com App Router, paleta clara inspirada no ITA e uma primeira camada de integração com o **PyThrust** para evoluir de simulação AAR para uma plataforma de missão AAR + UAV/MDO.
+O projeto agora está migrado para **Next.js** com App Router, paleta clara inspirada no ITA e uma primeira camada de integração com o **PyThrust** para evoluir de simulação AAR para um sistema único de análise AAR + UAV/MDO.
 
 ## Rodar localmente
 
@@ -32,7 +32,7 @@ O build Next está configurado com `output: 'export'` e gera a pasta `out/` para
 
 ## Como abrir
 
-Rode `npm run dev`. A página principal apresenta a plataforma integrada AAR + UAV; a rota **`/simulador`** abre o simulador AAR preservado como módulo embarcado.
+Rode `npm run dev`. A página principal apresenta o console integrado AAR + UAV; a rota **`/simulador`** abre diretamente o módulo AAR.
 
 > O estado é guardado apenas na sessão do navegador (`sessionStorage`) e descartado ao fechar a aba — nada é gravado em servidor.
 
@@ -41,9 +41,9 @@ Rode `npm run dev`. A página principal apresenta a plataforma integrada AAR + U
 | Caminho | O quê |
 |---|---|
 | `src/app/` | Rotas Next.js (`/` e `/simulador`) |
-| `src/components/` | Componentes React da plataforma |
+| `src/components/` | Componentes React do sistema |
 | `src/data/platform.ts` | Dados da visão AAR + UAV/PyThrust |
-| `public/simulador-aar.html` | Simulador AAR legado preservado para iframe |
+| `public/simulador-aar.html` | Superfície atual do módulo AAR enquanto o motor é extraído para TypeScript |
 | `simulador_aar.html` | Cópia standalone da aplicação original evoluída |
 | `pythrust/` | Projeto PyThrust para futura ponte Python/MDO |
 | `scripts/dev-server.mjs` | Preview local de export estático (`out/`) |
@@ -52,10 +52,10 @@ Rode `npm run dev`. A página principal apresenta a plataforma integrada AAR + U
 
 ## Integração AAR + PyThrust
 
-A primeira etapa da união dos projetos cria uma plataforma comum:
+A primeira etapa da união dos projetos cria um sistema comum:
 
 - **AAR Engine**: simula reabastecimento em ciranda, pausas, bingo fuel, threshold e ontologia operacional.
-- **PyThrust**: preservado em `pythrust/` para análise de propulsão elétrica, calibração, busca em bancos de motores/hélices e MDO com OpenMDAO.
+- **PyThrust**: mantido em `pythrust/` para análise de propulsão elétrica, calibração, busca em bancos de motores/hélices e MDO com OpenMDAO.
 - **Próxima extração**: mover o motor de simulação do HTML para módulos TypeScript testáveis e criar uma ponte Python/API para executar rotinas PyThrust.
 
 ---
