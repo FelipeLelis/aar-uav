@@ -100,11 +100,19 @@ export default function Home() {
       </section>
 
       <footer className="footer">
-        Projeto próprio derivado de{' '}
+        Autor:{' '}
+        <a href="https://github.com/FelipeLelis/aar" target="_blank" rel="noreferrer">
+          Felipe Lelis
+        </a>
+        . Projeto derivado de{' '}
         <a href="https://github.com/YgorLog/sim-aar" target="_blank" rel="noreferrer">
           YgorLog/sim-aar
+        </a>{' '}
+        e{' '}
+        <a href="https://github.com/Setuav/PyThrust" target="_blank" rel="noreferrer">
+          Setuav/PyThrust
         </a>
-        . PyThrust em <code>pythrust/</code> para integração UAV/MDO.
+        .
       </footer>
     </main>
   );

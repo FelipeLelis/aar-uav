@@ -25,9 +25,17 @@ export default function SimulatorPage() {
       <AarSimulationModule compact />
 
       <footer className="footer">
-        Projeto próprio derivado de{' '}
+        Autor:{' '}
+        <a href="https://github.com/FelipeLelis/aar" target="_blank" rel="noreferrer">
+          Felipe Lelis
+        </a>
+        . Projeto derivado de{' '}
         <a href="https://github.com/YgorLog/sim-aar" target="_blank" rel="noreferrer">
           YgorLog/sim-aar
+        </a>{' '}
+        e{' '}
+        <a href="https://github.com/Setuav/PyThrust" target="_blank" rel="noreferrer">
+          Setuav/PyThrust
         </a>
         .
       </footer>

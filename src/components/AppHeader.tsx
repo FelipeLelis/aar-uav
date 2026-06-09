@@ -4,7 +4,7 @@ export function AppHeader() {
   return (
     <header className="topbar">
       <Link className="brand" href="/">
-        <span className="brand-mark">ITA</span>
+        <span className="brand-mark">AAR</span>
         <div>
           <h1>Sistema AAR + UAV</h1>
           <p>Sistema de simulação AAR, UAV e otimização de missão.</p>

@@ -1,9 +1,9 @@
-:root {
-  --ita-blue: #003f7d;
-  --ita-blue-700: #002f5f;
-  --ita-blue-050: #eef6ff;
-  --ita-gold: #d6a336;
-  --ita-red: #b3242a;
+﻿:root {
+  --brand-blue: #003f7d;
+  --brand-blue-700: #002f5f;
+  --brand-blue-050: #eef6ff;
+  --brand-gold: #d6a336;
+  --brand-red: #b3242a;
   --ink: #122033;
   --muted: #66758a;
   --line: #d9e3ee;
@@ -72,7 +72,7 @@ select {
 
 .brand-mark {
   align-items: center;
-  background: var(--ita-blue);
+  background: var(--brand-blue);
   border-radius: 8px;
   color: #fff;
   display: inline-flex;
@@ -104,14 +104,14 @@ select {
 .pill {
   border: 1px solid var(--line);
   border-radius: 999px;
-  color: var(--ita-blue);
+  color: var(--brand-blue);
   font-size: 0.84rem;
   font-weight: 700;
   padding: 7px 11px;
 }
 
 .eyebrow {
-  color: var(--ita-blue);
+  color: var(--brand-blue);
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -128,7 +128,7 @@ select {
 }
 
 .console-header h2 {
-  color: var(--ita-blue-700);
+  color: var(--brand-blue-700);
   font-size: clamp(1.65rem, 3.2vw, 2.75rem);
   line-height: 1;
   margin: 0;
@@ -144,7 +144,7 @@ select {
 .run-state {
   background: #fff;
   border: 1px solid var(--line);
-  border-left: 4px solid var(--ita-blue);
+  border-left: 4px solid var(--brand-blue);
   border-radius: 10px;
   box-shadow: var(--shadow-soft);
   display: grid;
@@ -162,7 +162,7 @@ select {
 }
 
 .run-state strong {
-  color: var(--ita-blue-700);
+  color: var(--brand-blue-700);
   font-size: 1.25rem;
 }
 
@@ -206,13 +206,13 @@ select {
 }
 
 .map-node {
-  color: var(--ita-blue-700);
+  color: var(--brand-blue-700);
   font-size: 0.86rem;
   font-weight: 800;
 }
 
 .map-edge {
-  color: var(--ita-gold);
+  color: var(--brand-gold);
   font-size: 0.76rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -269,7 +269,7 @@ select {
 .module-card {
   background: #fff;
   border: 1px solid var(--line);
-  border-left: 4px solid var(--ita-blue);
+  border-left: 4px solid var(--brand-blue);
   border-radius: 10px;
   box-shadow: var(--shadow-soft);
   display: grid;
@@ -287,7 +287,7 @@ select {
 }
 
 .module-card h3 {
-  color: var(--ita-blue-700);
+  color: var(--brand-blue-700);
   font-size: 1.35rem;
   margin: 0;
 }
@@ -300,7 +300,7 @@ select {
 
 .module-card strong {
   align-self: end;
-  color: var(--ita-blue);
+  color: var(--brand-blue);
   font-size: 0.9rem;
 }
 
@@ -322,7 +322,7 @@ select {
 }
 
 .metric strong {
-  color: var(--ita-blue);
+  color: var(--brand-blue);
   display: block;
   font-size: 1.35rem;
   margin-top: 8px;
@@ -345,7 +345,7 @@ select {
 }
 
 .workflow .panel::before {
-  background: var(--ita-blue);
+  background: var(--brand-blue);
   border-radius: 999px;
   color: #fff;
   content: counter(steps);
@@ -434,7 +434,7 @@ select {
   background: var(--panel-soft);
   border: 1px solid var(--line);
   border-radius: 10px;
-  color: var(--ita-blue-700);
+  color: var(--brand-blue-700);
   font-size: 0.9rem;
   font-weight: 700;
   padding: 10px 12px;
@@ -482,7 +482,7 @@ select {
 .uav-summary {
   background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
   border: 1px solid var(--line);
-  border-left: 4px solid var(--ita-blue);
+  border-left: 4px solid var(--brand-blue);
   border-radius: 10px;
   padding: 12px;
 }
@@ -497,7 +497,7 @@ select {
 }
 
 .uav-summary strong {
-  color: var(--ita-blue-700);
+  color: var(--brand-blue-700);
   display: block;
   font-size: 1.1rem;
   margin-top: 8px;
@@ -529,7 +529,7 @@ select {
 }
 
 .uav-summary dd {
-  color: var(--ita-blue);
+  color: var(--brand-blue);
   font-weight: 900;
   margin: 3px 0 0;
 }
@@ -643,3 +643,4 @@ select {
     min-height: 760px;
   }
 }
+

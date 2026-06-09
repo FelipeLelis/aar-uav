@@ -29,7 +29,15 @@ export default function UavPage() {
       <UavOptimizationPanel modules={pythrustModules} />
 
       <footer className="footer">
-        PyThrust em <code>pythrust/</code> para integração UAV/MDO.
+        Autor:{' '}
+        <a href="https://github.com/FelipeLelis/aar" target="_blank" rel="noreferrer">
+          Felipe Lelis
+        </a>
+        . Módulo UAV derivado de{' '}
+        <a href="https://github.com/Setuav/PyThrust" target="_blank" rel="noreferrer">
+          Setuav/PyThrust
+        </a>
+        .
       </footer>
     </main>
   );
