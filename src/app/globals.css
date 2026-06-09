@@ -260,6 +260,50 @@ select {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.module-picker {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.module-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--ita-blue);
+  border-radius: 10px;
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  gap: 10px;
+  min-height: 190px;
+  padding: 16px;
+}
+
+.module-card span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.module-card h3 {
+  color: var(--ita-blue-700);
+  font-size: 1.35rem;
+  margin: 0;
+}
+
+.module-card p {
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.module-card strong {
+  align-self: end;
+  color: var(--ita-blue);
+  font-size: 0.9rem;
+}
+
 .metric {
   background: #fff;
   border: 1px solid var(--line);
@@ -573,6 +617,7 @@ select {
 
   .console-header,
   .technical-grid,
+  .module-picker,
   .grid.cols-3,
   .grid.cols-2 {
     grid-template-columns: 1fr;

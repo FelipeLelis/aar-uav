@@ -13,7 +13,7 @@ export function AppHeader() {
       <nav className="nav" aria-label="Navegação principal">
         <Link href="/">Console</Link>
         <Link href="/simulador/">AAR</Link>
-        <a href="#uav">UAV / PyThrust</a>
+        <Link href="/uav/">UAV / PyThrust</Link>
       </nav>
     </header>
   );

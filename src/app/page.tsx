@@ -1,10 +1,23 @@
-import { AarSimulationModule } from '@/components/AarSimulationModule';
+import Link from 'next/link';
 import { AppHeader } from '@/components/AppHeader';
 import { IntegrationMap } from '@/components/IntegrationMap';
 import { MetricCard } from '@/components/MetricCard';
-import { UavSimulationModule } from '@/components/UavSimulationModule';
-import { UavOptimizationPanel } from '@/components/UavOptimizationPanel';
-import { aarCapabilities, integrationMap, pythrustModules, roadmap } from '@/data/platform';
+import { aarCapabilities, integrationMap, roadmap } from '@/data/platform';
+
+const modules = [
+  {
+    title: 'Módulo AAR',
+    href: '/simulador/',
+    state: 'operacional',
+    text: 'Simula reabastecimento em ciranda, fila, pausas por fluxo e cruzamento de bingo fuel.',
+  },
+  {
+    title: 'Módulo UAV / PyThrust',
+    href: '/uav/',
+    state: 'triagem ativa',
+    text: 'Avalia combinações de motor, hélice, bateria e margens de missão para UAVs.',
+  },
+];
 
 export default function Home() {
   return (
@@ -16,15 +29,14 @@ export default function Home() {
           <p className="eyebrow">Console de simulação</p>
           <h2>AAR + UAV</h2>
           <p>
-            Ambiente único para estudar reabastecimento em ciranda, consumo em
-            espera, limites de missão e futuras rotinas de otimização UAV via
-            PyThrust.
+            Painel central para acessar os módulos de reabastecimento aéreo,
+            propulsão UAV e evolução da ontologia de missão.
           </p>
         </div>
         <aside className="run-state">
           <span>estado do sistema</span>
-          <strong>em desenvolvimento</strong>
-          <small>AAR ativo · PyThrust acoplado como base local</small>
+          <strong>modularizado</strong>
+          <small>AAR e UAV separados em rotas próprias</small>
         </aside>
       </section>
 
@@ -41,7 +53,28 @@ export default function Home() {
         </div>
       </section>
 
-      <AarSimulationModule />
+      <section className="section">
+        <div className="section-header">
+          <div>
+            <p className="eyebrow">Módulos</p>
+            <h2>Escolha o ambiente de estudo</h2>
+          </div>
+          <p>
+            Cada módulo concentra seus controles, resultados e hipóteses para
+            reduzir a carga de informação na tela.
+          </p>
+        </div>
+        <div className="module-picker">
+          {modules.map((module) => (
+            <Link className="module-card" href={module.href} key={module.title}>
+              <span>{module.state}</span>
+              <h3>{module.title}</h3>
+              <p>{module.text}</p>
+              <strong>Abrir módulo</strong>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <section className="section technical-grid" id="modelo">
         <article className="panel">
@@ -55,42 +88,15 @@ export default function Home() {
           </div>
         </article>
         <article className="panel">
-          <h3>Escopo atual</h3>
-          <p>
-            O módulo AAR está operacional. O PyThrust entra como núcleo Python
-            para catalogar e otimizar sistemas de propulsão elétrica em UAVs.
-          </p>
+          <h3>Próximas extrações técnicas</h3>
           <div className="scope-list">
-            <span>AAR: simulação temporal discreta</span>
-            <span>UAV: motores, hélices, bateria e perfil</span>
-            <span>MDO: objetivos, restrições e busca em catálogos</span>
+            {roadmap.map((item) => (
+              <span key={item.title}>
+                {item.title}: {item.text}
+              </span>
+            ))}
           </div>
         </article>
-      </section>
-
-      <UavSimulationModule />
-
-      <UavOptimizationPanel modules={pythrustModules} />
-
-      <section className="section compact-section">
-        <div className="section-header">
-          <div>
-            <p className="eyebrow">Modularização</p>
-            <h2>Próximas extrações técnicas</h2>
-          </div>
-          <p>
-            A prioridade é transformar o simulador em módulos próprios do
-            projeto: motor AAR, visualização, ontologia e ponte PyThrust.
-          </p>
-        </div>
-        <div className="grid cols-2 workflow">
-          {roadmap.map((item) => (
-            <article className="panel" key={item.title}>
-              <h3>{item.title}</h3>
-              <p>{item.text}</p>
-            </article>
-          ))}
-        </div>
       </section>
 
       <footer className="footer">
