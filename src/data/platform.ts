@@ -34,18 +34,18 @@ export const pythrustModules = [
 export const roadmap = [
   {
     title: 'Motor AAR',
-    text: 'Extrair o cálculo temporal para TypeScript, com testes para eventos, bingo, deadlock e threshold.',
+    text: 'Criado em TypeScript como função pura para eventos, pausa, fila e bingo. Próximo passo: substituir gradualmente o legado embarcado.',
   },
   {
     title: 'Visualização',
-    text: 'Substituir a superfície embarcada por componentes React e cena 3D própria do projeto.',
+    text: 'Cena 3D segue no legado; a próxima etapa é conectá-la aos estados do novo motor AAR.',
   },
   {
     title: 'Ponte PyThrust',
-    text: 'Executar solvers Python por job/API local, mantendo OpenMDAO e bancos reais de motores/hélices.',
+    text: 'Solver UAV separado do componente React, preparado para trocar a triagem aproximada por execução Python/OpenMDAO.',
   },
   {
     title: 'Missão combinada',
-    text: 'Comparar AAR, endurance UAV, swaps de bateria, payload e trajetórias sob a mesma ontologia.',
+    text: 'Criada camada de ontologia para comparar AAR e UAV por energia, restrições e recomendações.',
   },
 ];
