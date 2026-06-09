@@ -1,0 +1,3294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Simulador AAR — Reabastecimento em Voo</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e14;
+    --surface: #131922;
+    --surface-2: #1a2230;
+    --border: #2a3445;
+    --text: #e8eaed;
+    --text-dim: #8b95a7;
+    --amber: #ffb13b;
+    --cyan: #4ddbff;
+    --green: #5ee07f;
+    --red: #ff5a5a;
+    --magenta: #d77bff;
+    --yellow: #ffe05e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+  body {
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(77,219,255,0.06), transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(255,177,59,0.05), transparent 45%);
+  }
+  .container { max-width: 1500px; margin: 0 auto; padding: 28px; }
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 18px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  footer {
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.4px;
+    margin-top: 22px;
+    padding-top: 14px;
+    text-align: center;
+  }
+  footer a {
+    color: var(--cyan);
+    text-decoration: none;
+  }
+  footer a:hover { color: var(--amber); }
+  h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
+  h1 .accent { color: var(--amber); }
+  .subtitle {
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  main {
+    display: grid;
+    grid-template-columns: 460px 1fr;
+    gap: 22px;
+  }
+  @media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px;
+  }
+  .panel h2 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--amber);
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel h2::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--amber);
+    box-shadow: 0 0 8px var(--amber);
+  }
+  .panel.cyan h2 { color: var(--cyan); }
+  .panel.cyan h2::before { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+  .panel.green h2 { color: var(--green); }
+  .panel.green h2::before { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .panel.magenta h2 { color: var(--magenta); }
+  .panel.magenta h2::before { background: var(--magenta); box-shadow: 0 0 8px var(--magenta); }
+  .panel + .panel { margin-top: 16px; }
+
+  /* ====== Collapsible panels / sections ====== */
+  .collapse-header { display: flex; align-items: center; }
+  .collapsible > .collapse-header { cursor: pointer; user-select: none; }
+  .collapsible > .collapse-header::after {
+    content: '▾';
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-dim);
+    transition: transform 0.15s ease;
+  }
+  .collapsible.collapsed > .collapse-header::after { transform: rotate(-90deg); }
+  .collapsible.collapsed > .collapse-header {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+  .collapsible.collapsed > *:not(.collapse-header) { display: none; }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px;
+  }
+  .field label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .field input, .field select, select.unit-select {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 10px;
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus, select.unit-select:focus {
+    outline: none;
+    border-color: var(--amber);
+  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  .input-with-unit {
+    display: grid;
+    grid-template-columns: 1fr 80px;
+    gap: 4px;
+  }
+  .input-with-unit input { width: 100%; }
+  .input-with-unit select {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--cyan);
+    padding: 7px 6px;
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+  }
+
+  .unit-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .unit-bar .field { margin-bottom: 0; }
+  .unit-bar select { padding: 5px 8px; font-size: 12px; }
+
+  .toggle-group {
+    display: flex;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px;
+    margin-bottom: 10px;
+  }
+  .toggle-group button {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    padding: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+  }
+  .toggle-group button.active {
+    background: var(--amber);
+    color: var(--bg);
+    font-weight: 600;
+  }
+
+  .per-aircraft-list {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px;
+    background: var(--surface-2);
+  }
+  .per-aircraft-row {
+    display: grid;
+    grid-template-columns: 30px 1fr 1fr 1fr 1fr 46px 64px;
+    gap: 4px;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .per-aircraft-list.tolerance-on .per-aircraft-row,
+  .per-aircraft-list.tolerance-on + .per-aircraft-header,
+  .per-aircraft-header.tolerance-on {
+    grid-template-columns: 30px 1fr 1fr 1fr 1fr 1fr 46px 64px;
+  }
+  .per-aircraft-list.tolerance-on .per-aircraft-row {
+    grid-template-columns: 30px 1fr 1fr 1fr 1fr 1fr 46px 64px;
+  }
+  .per-aircraft-row:last-child { border-bottom: none; }
+  .per-aircraft-row .ac-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--cyan);
+    font-weight: 600;
+  }
+  .per-aircraft-row input, .per-aircraft-row select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 4px 5px;
+    border-radius: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    width: 100%;
+  }
+  .per-aircraft-row select { color: var(--cyan); }
+  .per-aircraft-row .tol-cell { display: none; }
+  .per-aircraft-row .tol-cell input { color: var(--yellow); }
+  .per-aircraft-list.tolerance-on .per-aircraft-row .tol-cell { display: block; }
+  .per-aircraft-header {
+    display: grid;
+    grid-template-columns: 30px 1fr 1fr 1fr 1fr 46px 64px;
+    gap: 4px;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .per-aircraft-header .tol-col { display: none; }
+  .per-aircraft-header.tolerance-on { grid-template-columns: 30px 1fr 1fr 1fr 1fr 1fr 46px 64px; }
+  .per-aircraft-header.tolerance-on .tol-col { display: block; }
+  .tolerance-block {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 12px;
+  }
+  .tolerance-block .check-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--yellow);
+    cursor: pointer;
+  }
+  .tolerance-block .check-line input[type=checkbox] {
+    accent-color: var(--yellow);
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+  }
+  .tolerance-block .tol-help {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    margin: 6px 0 8px;
+    line-height: 1.5;
+  }
+  .tolerance-block .tol-config { display: none; margin-top: 8px; }
+  .tolerance-block.on .tol-config { display: block; }
+  .badge.topup { background: rgba(255,224,94,0.15); color: var(--yellow); }
+  .badge.start-topup { background: rgba(255,224,94,0.2); color: var(--yellow); }
+  .col-label {
+    font-size: 9px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .btn {
+    width: 100%;
+    background: var(--amber);
+    color: var(--bg);
+    border: none;
+    padding: 14px;
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { filter: brightness(1.1); box-shadow: 0 0 20px rgba(255,177,59,0.3); }
+  .btn:active { transform: translateY(1px); }
+  .btn-secondary {
+    background: var(--magenta);
+    color: var(--bg);
+    margin-top: 8px;
+  }
+  .btn-secondary:hover { box-shadow: 0 0 20px rgba(215,123,255,0.3); }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 1200px) { .metrics { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 700px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    border-left: 3px solid var(--amber);
+  }
+  .metric.cyan { border-left-color: var(--cyan); }
+  .metric.green { border-left-color: var(--green); }
+  .metric.red { border-left-color: var(--red); }
+  .metric.magenta { border-left-color: var(--magenta); }
+  .metric.yellow { border-left-color: var(--yellow); }
+  .metric .label {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 6px;
+  }
+  .metric .value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+  }
+  .metric .unit {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-left: 4px;
+  }
+
+  .chart-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px;
+    margin-bottom: 18px;
+    height: 460px;
+    position: relative;
+  }
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .chart-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+  }
+  .display-unit-select {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--amber);
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+  }
+  canvas { max-height: 380px; }
+
+  .event-log {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px;
+    max-height: 280px;
+    overflow-y: auto;
+    margin-bottom: 18px;
+  }
+  .event-log table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+  }
+  .event-log th {
+    text-align: left;
+    color: var(--text-dim);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+  }
+  .event-log td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .event-log tr:last-child td { border-bottom: none; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+  .badge.start { background: rgba(94,224,127,0.15); color: var(--green); }
+  .badge.complete { background: rgba(77,219,255,0.15); color: var(--cyan); }
+  .badge.pause { background: rgba(255,90,90,0.15); color: var(--red); }
+  .badge.resume { background: rgba(255,177,59,0.15); color: var(--amber); }
+  .badge.deadlock { background: rgba(255,90,90,0.3); color: var(--red); }
+  .badge.bingo { background: rgba(255,90,90,0.3); color: var(--red); }
+
+  .warning {
+    background: rgba(255,90,90,0.1);
+    border: 1px solid var(--red);
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    font-size: 12px;
+    color: var(--red);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .info-line {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+
+  .threshold-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .threshold-summary .metric {
+    border-left-color: var(--magenta);
+  }
+  .th-notes { font-size: 12px; color: var(--yellow); font-family: 'IBM Plex Mono', monospace; line-height: 1.55; margin-bottom: 12px; }
+  .th-notes:empty { display: none; }
+  .th-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim); }
+  .th-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .th-legend i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
+
+  .viz-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .viz-controls button {
+    background: var(--green);
+    color: var(--bg);
+    border: none;
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+  .viz-controls button:hover { filter: brightness(1.15); }
+  .viz-controls input[type=range] {
+    flex: 1;
+    min-width: 120px;
+    accent-color: var(--cyan);
+    height: 4px;
+  }
+  .viz-controls .viz-time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    min-width: 90px;
+    text-align: right;
+  }
+  .viz-controls select {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 8px;
+    border-radius: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+  }
+  canvas#vizCanvas {
+    width: 100%;
+    height: 340px;
+    background: linear-gradient(to bottom, #07101c 0%, #101826 56%, #0b1018 100%);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: block;
+  }
+
+  .study-grid {
+    display: grid;
+    grid-template-columns: minmax(260px, 0.9fr) minmax(300px, 1.1fr);
+    gap: 14px;
+  }
+  @media (max-width: 900px) { .study-grid { grid-template-columns: 1fr; } }
+  .study-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+  }
+  .study-card h3 {
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+  .study-list {
+    display: grid;
+    gap: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    line-height: 1.45;
+  }
+  .study-item {
+    border-left: 2px solid var(--cyan);
+    color: var(--text);
+    padding-left: 9px;
+  }
+  .study-item.warn { border-left-color: var(--amber); }
+  .study-item.danger { border-left-color: var(--red); }
+  .ontology-map {
+    display: grid;
+    gap: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+  }
+  .ontology-row {
+    display: grid;
+    grid-template-columns: minmax(110px, 0.85fr) 68px minmax(150px, 1.15fr);
+    gap: 8px;
+    align-items: center;
+  }
+  .ontology-node {
+    background: rgba(77,219,255,0.08);
+    border: 1px solid rgba(77,219,255,0.28);
+    border-radius: 4px;
+    color: var(--cyan);
+    padding: 7px 8px;
+  }
+  .ontology-node.alt {
+    background: rgba(255,177,59,0.08);
+    border-color: rgba(255,177,59,0.32);
+    color: var(--amber);
+  }
+  .ontology-edge { color: var(--text-dim); font-size: 10px; text-align: center; }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+  .sub-block {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface-2);
+    margin-bottom: 12px;
+    padding: 0;
+  }
+  .sub-block.highlighted {
+    border-color: var(--amber);
+    background: rgba(255,177,59,0.04);
+  }
+  .sub-block summary, .sub-block .sub-header {
+    cursor: pointer;
+    padding: 8px 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    list-style: none;
+    user-select: none;
+  }
+  .sub-block.highlighted .sub-header {
+    cursor: default;
+    color: var(--amber);
+    font-weight: 600;
+  }
+  .sub-block summary::-webkit-details-marker { display: none; }
+  .sub-block summary::before {
+    content: '▾ ';
+    color: var(--text-dim);
+    margin-right: 4px;
+  }
+  .sub-block:not([open]) summary::before { content: '▸ '; }
+  .sub-block .sub-body {
+    padding: 10px 12px 12px;
+    border-top: 1px solid var(--border);
+  }
+  .sub-block.highlighted .sub-body { border-top-color: rgba(255,177,59,0.3); }
+
+  .suggest-bar {
+    display: grid;
+    grid-template-columns: 1fr 100px;
+    gap: 8px;
+    align-items: end;
+    margin-bottom: 8px;
+  }
+  .btn-suggest {
+    background: var(--amber);
+    color: var(--bg);
+    border: none;
+    padding: 9px 10px;
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+  .btn-suggest:hover { filter: brightness(1.1); }
+  .suggest-folga {
+    display: flex;
+    flex-direction: column;
+  }
+  .suggest-folga label {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .suggest-folga input {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 8px;
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+  }
+  .suggest-detail {
+    background: rgba(255,177,59,0.08);
+    border: 1px solid rgba(255,177,59,0.35);
+    border-radius: 4px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--text);
+    white-space: pre-line;
+  }
+  .suggest-detail .warn { color: var(--red); }
+
+  .btn-scenario {
+    background: var(--magenta);
+    color: var(--bg);
+    border: none;
+    padding: 10px;
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+  .btn-scenario:hover { filter: brightness(1.1); box-shadow: 0 0 12px rgba(215,123,255,0.25); }
+
+  /* ====== Tabs ====== */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 22px; flex-wrap: wrap; }
+  .tab-btn {
+    background: transparent; border: none; color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.5px; padding: 12px 22px;
+    cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ====== Intro ====== */
+  .intro { max-width: 900px; margin: 0 auto; }
+  .intro .panel p { color: var(--text); line-height: 1.7; margin-bottom: 10px; font-size: 14px; }
+  .intro .panel p:last-child { margin-bottom: 0; }
+  .intro ol, .intro ul { margin: 8px 0 10px 20px; line-height: 1.7; color: var(--text); font-size: 14px; }
+  .intro li { margin-bottom: 6px; }
+  .intro code { font-family: 'IBM Plex Mono', monospace; background: var(--surface-2); padding: 1px 5px; border-radius: 3px; font-size: 12.5px; color: var(--cyan); }
+  .formula-block {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 14px 16px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;
+    line-height: 1.8; white-space: pre-wrap; color: var(--cyan); margin: 8px 0 14px; overflow-x: auto;
+  }
+  details.formulas { margin-top: 12px; }
+  details.formulas > summary {
+    cursor: pointer; color: var(--amber); font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; text-transform: uppercase; letter-spacing: 1px; padding: 8px 0; user-select: none;
+    list-style: none;
+  }
+  details.formulas > summary::-webkit-details-marker { display: none; }
+  details.formulas[open] > summary { margin-bottom: 6px; }
+  details.formulas .formula-block:last-child { margin-bottom: 0; }
+
+  /* ====== Empty-state hint ====== */
+  .empty-hint {
+    background: var(--surface); border: 1px dashed var(--border); border-radius: 6px;
+    padding: 16px 18px; color: var(--text-dim); font-size: 13px; line-height: 1.6; margin-bottom: 18px;
+  }
+
+  /* ====== Clean cockpit redesign pass ====== */
+  :root {
+    --bg: #080b10;
+    --surface: #11161d;
+    --surface-2: #171e27;
+    --surface-3: #202935;
+    --border: #2a3340;
+    --border-soft: rgba(154, 170, 190, 0.16);
+    --text: #edf1f5;
+    --text-dim: #9aa8b8;
+    --amber: #f2b84b;
+    --cyan: #55c7e8;
+    --green: #69d289;
+    --red: #ff6b6b;
+    --magenta: #b78cff;
+    --yellow: #eadf72;
+  }
+  html { scrollbar-gutter: stable; }
+  body {
+    background-color: var(--bg);
+    background-image:
+      linear-gradient(180deg, rgba(20,27,36,0.95) 0%, rgba(8,11,16,1) 40%, rgba(8,11,16,1) 100%),
+      linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(255,255,255,0.024) 1px, transparent 1px);
+    background-size: auto, 48px 48px, 48px 48px;
+  }
+  .container {
+    max-width: 1640px;
+    padding: 22px clamp(16px, 2.2vw, 34px) 28px;
+  }
+  header {
+    align-items: center;
+    background: rgba(17,22,29,0.72);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    margin-bottom: 14px;
+    padding: 16px 18px;
+  }
+  h1 {
+    font-size: clamp(19px, 1.45vw, 24px);
+    letter-spacing: 0;
+  }
+  h1 .accent { display: none; }
+  .subtitle {
+    background: rgba(105,210,137,0.09);
+    border: 1px solid rgba(105,210,137,0.28);
+    border-radius: 999px;
+    color: var(--green);
+    letter-spacing: 1px;
+    padding: 7px 11px;
+    white-space: nowrap;
+  }
+  .tabs {
+    background: rgba(17,22,29,0.52);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    gap: 6px;
+    margin-bottom: 18px;
+    padding: 5px;
+  }
+  .tab-btn {
+    border: 0;
+    border-radius: 6px;
+    font-size: 11px;
+    letter-spacing: 0.8px;
+    margin: 0;
+    padding: 10px 16px;
+  }
+  .tab-btn.active {
+    background: var(--surface-3);
+    border-bottom-color: transparent;
+    color: var(--text);
+  }
+  main {
+    align-items: start;
+    grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
+    gap: 18px;
+  }
+  main > div:first-child {
+    max-height: calc(100vh - 22px);
+    overflow: auto;
+    padding-right: 3px;
+    position: sticky;
+    top: 14px;
+  }
+  @media (max-width: 1100px) {
+    main > div:first-child {
+      max-height: none;
+      overflow: visible;
+      position: static;
+    }
+  }
+  .panel,
+  .chart-wrapper,
+  .event-log,
+  .empty-hint {
+    background: rgba(17,22,29,0.88);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    box-shadow: none;
+  }
+  .panel { padding: 16px; }
+  .panel + .panel { margin-top: 12px; }
+  .panel h2 {
+    border-bottom-color: var(--border-soft);
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    margin-bottom: 12px;
+    padding-bottom: 9px;
+  }
+  .panel h2::before {
+    border-radius: 2px;
+    box-shadow: none;
+    height: 10px;
+    width: 3px;
+  }
+  .collapsible.collapsed {
+    background: rgba(17,22,29,0.58);
+  }
+  .field { margin-bottom: 9px; }
+  .field label,
+  .col-label {
+    color: #aab5c2;
+    font-size: 9px;
+    letter-spacing: 0.7px;
+  }
+  .field input,
+  .field select,
+  select.unit-select,
+  .input-with-unit select,
+  .viz-controls select,
+  .display-unit-select,
+  .suggest-folga input,
+  .per-aircraft-row input,
+  .per-aircraft-row select {
+    background: rgba(8,11,16,0.58);
+    border-color: var(--border-soft);
+    border-radius: 6px;
+    min-height: 34px;
+  }
+  .field input:focus,
+  .field select:focus,
+  select.unit-select:focus {
+    border-color: rgba(85,199,232,0.82);
+    box-shadow: 0 0 0 3px rgba(85,199,232,0.1);
+  }
+  .unit-bar,
+  .tolerance-block,
+  .per-aircraft-list,
+  .sub-block,
+  .suggest-detail {
+    background: rgba(23,30,39,0.7);
+    border-color: var(--border-soft);
+    border-radius: 8px;
+  }
+  .sub-block summary,
+  .sub-block .sub-header {
+    letter-spacing: 0.8px;
+    padding: 10px 12px;
+  }
+  .toggle-group {
+    background: rgba(8,11,16,0.52);
+    border-color: var(--border-soft);
+    border-radius: 8px;
+    padding: 3px;
+  }
+  .toggle-group button {
+    border-radius: 6px;
+    letter-spacing: 0.6px;
+    min-height: 32px;
+  }
+  .toggle-group button.active {
+    background: #d9e8ef;
+    color: #11161d;
+  }
+  .btn,
+  .btn-secondary,
+  .btn-scenario,
+  .btn-suggest,
+  .viz-controls button {
+    border-radius: 7px;
+    box-shadow: none;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+  }
+  .btn {
+    background: #e8f2f6;
+    color: #101820;
+  }
+  .btn-secondary,
+  .btn-scenario {
+    background: var(--surface-3);
+    color: var(--text);
+  }
+  .btn:hover,
+  .btn-secondary:hover,
+  .btn-scenario:hover,
+  .btn-suggest:hover,
+  .viz-controls button:hover {
+    box-shadow: none;
+    filter: brightness(1.08);
+  }
+  .metrics {
+    grid-template-columns: repeat(5, minmax(122px, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  @media (max-width: 1320px) { .metrics { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 700px) { .metrics { grid-template-columns: 1fr 1fr; } }
+  .metric {
+    background: rgba(17,22,29,0.82);
+    border-color: var(--border-soft);
+    border-left-width: 2px;
+    border-radius: 8px;
+    min-height: 78px;
+    padding: 11px 12px;
+  }
+  .metric .label {
+    font-size: 9px;
+    letter-spacing: 0.8px;
+    min-height: 24px;
+  }
+  .metric .value {
+    font-size: clamp(18px, 1.5vw, 24px);
+    letter-spacing: 0;
+  }
+  #vizPanel {
+    background:
+      linear-gradient(180deg, rgba(27,35,46,0.82), rgba(12,16,23,0.94)),
+      linear-gradient(90deg, rgba(85,199,232,0.08), transparent 48%);
+    padding: 14px;
+  }
+  #vizPanel h2 { margin-bottom: 10px; }
+  .viz-controls {
+    background: rgba(8,11,16,0.38);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding: 8px;
+  }
+  .viz-controls button {
+    min-height: 32px;
+    padding: 6px 12px;
+  }
+  .viz-controls .viz-time {
+    background: rgba(8,11,16,0.48);
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    min-width: 104px;
+    padding: 7px 8px;
+  }
+  canvas#vizCanvas {
+    background: #080b10;
+    border-color: rgba(85,199,232,0.2);
+    border-radius: 8px;
+    height: clamp(380px, 48vh, 560px);
+    max-height: none;
+  }
+  .chart-wrapper {
+    height: 430px;
+    padding: 16px;
+  }
+  .study-grid {
+    grid-template-columns: minmax(260px, 0.95fr) minmax(320px, 1.05fr);
+  }
+  .study-card {
+    background: transparent;
+    border-color: var(--border-soft);
+    border-radius: 8px;
+  }
+  .study-item {
+    background: rgba(8,11,16,0.3);
+    border-radius: 0 6px 6px 0;
+    padding: 7px 9px;
+  }
+  .ontology-row {
+    grid-template-columns: minmax(112px, 0.8fr) 72px minmax(150px, 1.2fr);
+  }
+  .ontology-node {
+    background: rgba(85,199,232,0.08);
+    border-color: rgba(85,199,232,0.2);
+    border-radius: 6px;
+  }
+  .ontology-node.alt {
+    background: rgba(242,184,75,0.08);
+    border-color: rgba(242,184,75,0.2);
+  }
+  .event-log {
+    max-height: 340px;
+  }
+  footer {
+    background: rgba(17,22,29,0.45);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    margin-top: 18px;
+    padding: 13px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <h1><span class="accent">▶</span> SIMULADOR AAR <span style="color:var(--text-dim)">// Air-to-Air Refueling</span></h1>
+      <p class="info-line" style="margin-top:6px">Modelagem de fluxos pod→asa, asa→reabastecida, com consumo em espera, ciclos de retomada e análise de threshold operacional.</p>
+    </div>
+    <div class="subtitle" id="statusBadge">Aguardando simulação</div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="intro" id="tabBtnIntro">Introdução</button>
+    <button class="tab-btn" data-tab="sim" id="tabBtnSim">Simulador</button>
+  </nav>
+
+  <!-- ===== TAB: INTRODUÇÃO ===== -->
+  <section id="tab-intro" class="tab-panel active">
+    <div class="intro">
+      <div class="panel cyan">
+        <h2>O que é</h2>
+        <p>O <strong>Simulador AAR</strong> modela um reabastecimento aéreo em ciranda: uma aeronave <strong>reabastecedora</strong> atende várias <strong>reabastecidas</strong>, uma de cada vez, enquanto as demais aguardam consumindo combustível.</p>
+        <p>A reabastecedora tem dois reservatórios — o <strong style="color:var(--amber)">pod</strong> (grande reserva) e a <strong style="color:var(--cyan)">asa</strong> (tanque que entrega o combustível). Dois fluxos governam tudo: <strong>X</strong> (pod→asa) e <strong>Y</strong> (asa→aeronave). Quando Y é maior que X, a asa esvazia mais rápido do que enche e o procedimento <strong>pausa</strong> até a asa se recuperar — e é nessa espera que as aeronaves em fila queimam combustível e podem cruzar o limite operacional (<strong>bingo fuel</strong>).</p>
+        <p>O objetivo é responder, para uma dada configuração de fluxos, consumos e combustível embarcado: <em>a operação fecha? em quanto tempo? quantas aeronaves ela suporta?</em></p>
+      </div>
+
+      <div class="panel green">
+        <h2>Como operar</h2>
+        <ol>
+          <li>Na aba <strong>Simulador</strong>, abra o painel <strong>1 · Aeronaves Reabastecidas</strong> e informe quantidade, combustível inicial/alvo, consumos e o bingo fuel.</li>
+          <li>No painel <strong>2 · Aeronave Reabastecedora</strong>, defina os fluxos X e Y, os limiares da asa e o combustível embarcado (pod e asa). O botão <strong>Sugerir combustível</strong> propõe um ponto de partida.</li>
+          <li>No painel <strong>3 · Cenários</strong>, carregue um <strong>cenário de exemplo</strong> pronto (Nominal, No limite, Falha) para ver o simulador em ação na hora.</li>
+          <li>No painel <strong>4 · Parâmetros de Simulação</strong>, ajuste o passo e o tempo máximo e clique <strong>▶ Executar Simulação</strong>.</li>
+          <li>Acompanhe na <strong>Visualização da Operação</strong> (animação), no <strong>gráfico Combustível × Tempo</strong> e no <strong>Log de Eventos</strong>.</li>
+        </ol>
+        <p class="info-line">Os painéis começam recolhidos — clique no título de cada um para expandir. As unidades (kg, lb, L, gal) são configuráveis em cada bloco.</p>
+      </div>
+
+      <div class="panel cyan">
+        <h2>O modelo (System Dynamics)</h2>
+        <p>O mesmo modelo, na linguagem de <strong>System Dynamics</strong>. O combustível percorre uma <strong>cadeia de três estoques</strong>: do <strong style="color:var(--amber)">pod</strong> ele enche a <strong style="color:var(--cyan)">asa</strong> da reabastecedora (vazão pod→asa) e da asa passa para a <strong>reabastecida</strong> em contato (vazão asa→reabastecida). A asa é drenada por <strong>dois lados</strong> — a entrega à reabastecida <em>e</em> o motor da própria reabastecedora, que se alimenta da asa.</p>
+        <div style="background:#ffffff;border-radius:10px;padding:12px 8px;margin:12px 0;overflow-x:auto">
+          <svg viewBox="0 0 1040 390" style="width:100%;min-width:720px;height:auto;display:block" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, sans-serif">
+            <defs>
+              <marker id="a" markerWidth="9" markerHeight="9" refX="7.5" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3 L0,6 Z" fill="#1c2330"/></marker>
+              <marker id="ag" markerWidth="9" markerHeight="9" refX="7.5" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3 L0,6 Z" fill="#6b7686"/></marker>
+              <marker id="ar" markerWidth="9" markerHeight="9" refX="7.5" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3 L0,6 Z" fill="#c83a3a"/></marker>
+            </defs>
+            <g stroke="#8a93a3" fill="#fff" stroke-width="1.5"><circle cx="48" cy="145" r="12"/><circle cx="60" cy="136" r="15"/><circle cx="76" cy="142" r="12"/><circle cx="63" cy="154" r="12"/></g>
+            <text x="64" y="177" font-size="10.5" fill="#5a6577" text-anchor="middle">carga inicial</text>
+            <line x1="90" y1="145" x2="116" y2="145" stroke="#1c2330" stroke-width="2.5" marker-end="url(#a)"/>
+            <rect x="118" y="116" width="132" height="58" rx="4" fill="#eaf2ff" stroke="#1f6feb" stroke-width="2"/>
+            <text x="184" y="139" font-size="12" font-weight="700" fill="#13315c" text-anchor="middle">Combustível</text>
+            <text x="184" y="157" font-size="12" font-weight="700" fill="#13315c" text-anchor="middle">no pod</text>
+            <line x1="408" y1="174" x2="408" y2="238" stroke="#1c2330" stroke-width="2.5" marker-end="url(#a)"/>
+            <g fill="#fff" stroke="#1c2330" stroke-width="2"><path d="M396,193 L408,205 L396,217 Z"/><path d="M420,193 L408,205 L420,217 Z"/></g>
+            <text x="352" y="200" font-size="9.5" font-weight="700" fill="#42506a" text-anchor="end">Consumo da</text>
+            <text x="352" y="212" font-size="9.5" font-weight="700" fill="#42506a" text-anchor="end">reabastecedora</text>
+            <text x="352" y="224" font-size="8" fill="#7a8597" text-anchor="end">(motor puxa da asa)</text>
+            <g stroke="#8a93a3" fill="#fff" stroke-width="1.5"><circle cx="396" cy="256" r="10"/><circle cx="408" cy="249" r="12"/><circle cx="421" cy="255" r="10"/><circle cx="409" cy="264" r="10"/></g>
+            <line x1="250" y1="145" x2="380" y2="145" stroke="#1c2330" stroke-width="2.5" marker-end="url(#a)"/>
+            <g fill="#fff" stroke="#1c2330" stroke-width="2"><path d="M304,133 L316,145 L304,157 Z"/><path d="M328,133 L316,145 L328,157 Z"/></g>
+            <text x="316" y="123" font-size="10.5" font-weight="700" fill="#1f6feb" text-anchor="middle">Vazão pod → asa</text>
+            <rect x="382" y="116" width="150" height="58" rx="4" fill="#eafbf0" stroke="#1f9d57" stroke-width="2"/>
+            <text x="457" y="137" font-size="11" font-weight="700" fill="#125c33" text-anchor="middle">Combustível na asa</text>
+            <text x="457" y="151" font-size="9" fill="#42506a" text-anchor="middle">da reabastecedora</text>
+            <text x="457" y="165" font-size="8" fill="#7a8597" text-anchor="middle">(capacidade limitada)</text>
+            <line x1="532" y1="145" x2="664" y2="145" stroke="#1c2330" stroke-width="2.5" marker-end="url(#a)"/>
+            <g fill="#fff" stroke="#1c2330" stroke-width="2"><path d="M586,133 L598,145 L586,157 Z"/><path d="M610,133 L598,145 L610,157 Z"/></g>
+            <text x="598" y="123" font-size="10" font-weight="700" fill="#1f9d57" text-anchor="middle">Vazão asa → reabastecida</text>
+            <rect x="678" y="110" width="168" height="58" rx="4" fill="#fff3e8" stroke="#d97a2b" stroke-width="1.3"/>
+            <rect x="670" y="116" width="168" height="58" rx="4" fill="#fff3e8" stroke="#d97a2b" stroke-width="2"/>
+            <text x="754" y="140" font-size="10.5" font-weight="700" fill="#7a2d12" text-anchor="middle">Combustível da reabastecida i</text>
+            <text x="754" y="157" font-size="9" fill="#42506a" text-anchor="middle">(uma por aeronave)</text>
+            <line x1="838" y1="145" x2="946" y2="145" stroke="#1c2330" stroke-width="2.5" marker-end="url(#a)"/>
+            <g fill="#fff" stroke="#1c2330" stroke-width="2"><path d="M878,133 L890,145 L878,157 Z"/><path d="M902,133 L890,145 L902,157 Z"/></g>
+            <text x="890" y="119" font-size="10.5" font-weight="700" fill="#7a2d12" text-anchor="middle">Consumo da</text>
+            <text x="890" y="130" font-size="8.5" fill="#7a8597" text-anchor="middle">reabastecida</text>
+            <g stroke="#8a93a3" fill="#fff" stroke-width="1.5"><circle cx="958" cy="145" r="12"/><circle cx="970" cy="136" r="15"/><circle cx="986" cy="142" r="12"/><circle cx="973" cy="154" r="12"/></g>
+            <circle cx="480" cy="280" r="30" fill="#fff" stroke="#1f9d57" stroke-width="1.8"/>
+            <text x="480" y="274" font-size="9.5" font-weight="700" fill="#125c33" text-anchor="middle">bingo</text>
+            <text x="480" y="286" font-size="9.5" font-weight="700" fill="#125c33" text-anchor="middle">da asa</text>
+            <text x="480" y="306" font-size="8" fill="#7a8597" text-anchor="middle">(mín. + margem)</text>
+            <path d="M457,174 Q468,232 474,250" fill="none" stroke="#6b7686" stroke-width="1.4" stroke-dasharray="3,3" marker-end="url(#ag)"/>
+            <path d="M505,262 Q565,210 596,158" fill="none" stroke="#1f9d57" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#ag)"/>
+            <circle cx="690" cy="280" r="26" fill="#fff" stroke="#d97a2b" stroke-width="1.6"/>
+            <text x="690" y="277" font-size="9.5" fill="#7a2d12" text-anchor="middle">ordem</text><text x="690" y="289" font-size="8.5" fill="#7a2d12" text-anchor="middle">atendimento</text>
+            <path d="M666,272 Q628,210 604,158" fill="none" stroke="#d97a2b" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#ag)"/>
+            <circle cx="880" cy="280" r="30" fill="#fff" stroke="#c83a3a" stroke-width="1.8"/>
+            <text x="880" y="274" font-size="9.5" font-weight="700" fill="#a02d2d" text-anchor="middle">bingo da</text>
+            <text x="880" y="286" font-size="9.5" font-weight="700" fill="#a02d2d" text-anchor="middle">reabastecida</text>
+            <text x="880" y="306" font-size="8" fill="#c0392b" text-anchor="middle">→ FALHA</text>
+            <path d="M792,174 Q850,230 868,252" fill="none" stroke="#c83a3a" stroke-width="1.6" stroke-dasharray="3,3" marker-end="url(#ar)"/>
+            <path d="M420,116 Q370,80 332,131" fill="none" stroke="#6b7686" stroke-width="1.4" stroke-dasharray="3,3" marker-end="url(#ag)"/>
+            <text x="372" y="76" font-size="9.5" fill="#5a6577" text-anchor="middle">espaço livre na asa</text>
+            <path d="M680,110 Q630,80 604,131" fill="none" stroke="#6b7686" stroke-width="1.4" stroke-dasharray="3,3" marker-end="url(#ag)"/>
+            <text x="642" y="76" font-size="9.5" fill="#5a6577" text-anchor="middle">combustível que falta</text>
+            <path d="M820,172 Q828,326 720,290" fill="none" stroke="#6b7686" stroke-width="1.4" stroke-dasharray="5,3" marker-end="url(#ag)"/>
+            <text x="836" y="332" font-size="9.5" fill="#5a6577" text-anchor="middle">volta à fila (top-up)</text>
+            <text x="520" y="366" font-size="10.5" fill="#7a8597" text-anchor="middle">retângulo = estoque · gravata = válvula/fluxo · nuvem = fronteira · círculo pontilhado = informação/política</text>
+          </svg>
+        </div>
+        <p class="info-line"><strong>Driver físico:</strong> a vazão asa→reabastecida costuma ser muito maior que a pod→asa; por isso a asa esvazia mais rápido do que o pod a reenche e atinge o seu <strong>bingo da asa</strong> antes, disparando a <strong>pausa</strong>. A <strong>margem</strong> de retomada existe para reservar combustível tanto para o <strong>motor</strong> da reabastecedora quanto para ainda <strong>transferir</strong> à reabastecida.</p>
+        <p class="info-line">Há <strong>dois bingos distintos</strong>: o <strong>bingo da asa</strong> (reabastecedora) — nos campos do painel, <em>Limiar de pausa</em> + <em>Margem de retomada</em> — só <em>pausa</em> a transferência e é recuperável; já o <strong>bingo da reabastecida</strong> (campo <em>Bingo fuel</em>) é o limite de segurança de cada aeronave — abaixo dele, a operação <em>falha</em>.</p>
+
+        <details class="formulas" open>
+          <summary>▾ ver o diagrama de loops causais (CLD)</summary>
+          <p style="color:var(--text);margin:6px 0">A visão de feedback: o comportamento emerge de loops de <strong>balanceamento (B)</strong> e <strong>reforço (R)</strong> sobre a mesma cadeia. <strong>B1</strong> enche a asa; <strong>B2</strong> reabastece até o alvo; <strong>B3</strong> é o bingo da asa (pausa/retomada); <strong>R1</strong> é o acúmulo de espera na fila.</p>
+          <div style="background:#ffffff;border-radius:10px;padding:12px 8px;margin:12px 0;overflow-x:auto">
+            <svg id="sdCld" viewBox="0 0 1120 770" style="width:100%;min-width:760px;height:auto;display:block" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, sans-serif">
+              <defs>
+                <marker id="c5" markerWidth="9" markerHeight="9" refX="7.5" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,3 L0,6 Z" fill="#465061"/></marker>
+              </defs>
+              <style>
+                #sdCld .node { fill:#fff; stroke:#7a8597; stroke-width:1.35; }
+                #sdCld .nodeB { fill:#f7fbff; stroke:#1f6feb; stroke-width:1.55; }
+                #sdCld .nodeG { fill:#f5fff8; stroke:#1f9d57; stroke-width:1.55; }
+                #sdCld .nodeR { fill:#fff8f1; stroke:#c0631a; stroke-width:1.55; }
+                #sdCld .nodeFail { fill:#fff5f5; stroke:#c83a3a; stroke-width:1.55; }
+                #sdCld .shadow { fill:#f5fff8; stroke:#1f9d57; stroke-width:1.4; stroke-dasharray:6,3; }
+                #sdCld .nt { font-size:11px; fill:#1c2330; text-anchor:middle; }
+                #sdCld .small { font-size:9px; fill:#7a8597; text-anchor:middle; }
+                #sdCld .lk { fill:none; stroke:#5a6577; stroke-width:1.7; marker-end:url(#c5); }
+                #sdCld .soft { fill:none; stroke:#8a93a3; stroke-width:1.35; stroke-dasharray:5,4; marker-end:url(#c5); }
+                #sdCld .pol { font-size:14px; font-weight:700; fill:#1c2330; }
+                #sdCld .band { fill:#f8fafc; stroke:#e1e6ef; stroke-width:1; }
+                #sdCld .label { font-size:10px; fill:#7a8597; font-weight:700; letter-spacing:.8px; text-transform:uppercase; }
+              </style>
+              <rect class="band" x="20" y="34" width="1080" height="220" rx="10"/>
+              <rect class="band" x="20" y="272" width="1080" height="170" rx="10"/>
+              <rect class="band" x="20" y="462" width="1080" height="248" rx="10"/>
+              <text class="label" x="42" y="58">controle da asa da reabastecedora</text>
+              <text class="label" x="42" y="296">atendimento da reabastecida</text>
+              <text class="label" x="42" y="486">fila, espera e falha</text>
+              <rect class="nodeB" x="70" y="88" width="165" height="46" rx="20"/>
+              <text class="nt" x="152" y="106">espaço livre</text><text class="small" x="152" y="121">na asa</text>
+              <rect class="nodeB" x="70" y="176" width="165" height="46" rx="20"/>
+              <text class="nt" x="152" y="200">vazão pod → asa</text>
+              <rect class="nodeG" x="315" y="120" width="190" height="54" rx="22"/>
+              <text class="nt" x="410" y="143">combustível na asa</text><text class="nt" x="410" y="159">da reabastecedora</text>
+              <path class="lk" d="M152,134 L152,176"/><text class="pol" x="136" y="160">+</text>
+              <path class="lk" d="M235,199 C265,199 288,175 315,154"/><text class="pol" x="276" y="188">+</text>
+              <path class="lk" d="M315,132 C270,78 220,76 190,88"/><text class="pol" x="256" y="82">−</text>
+              <circle cx="260" cy="126" r="21" fill="#fff" stroke="#1f6feb" stroke-width="2"/>
+              <text x="260" y="124" font-size="12" font-weight="700" fill="#1f6feb" text-anchor="middle">B1</text>
+              <text x="260" y="137" font-size="8" fill="#1f6feb" text-anchor="middle">enche asa</text>
+              <rect class="shadow" x="575" y="82" width="185" height="52" rx="22"/>
+              <text class="nt" x="668" y="100">vazão asa →</text><text class="nt" x="668" y="114">reabastecida</text>
+              <text class="small" x="668" y="127">‹mesma variável›</text>
+              <rect class="nodeG" x="575" y="178" width="185" height="52" rx="22"/>
+              <text class="nt" x="668" y="200">asa atinge o bingo</text>
+              <text class="small" x="668" y="216">(bingo da asa)</text>
+              <rect class="nodeG" x="835" y="128" width="185" height="52" rx="22"/>
+              <text class="nt" x="928" y="147">pausa / retomada</text><text class="nt" x="928" y="161">da transferência</text>
+              <text class="small" x="928" y="174">(margem de retomada)</text>
+              <path class="lk" d="M575,108 C535,104 505,118 475,128"/><text class="pol" x="526" y="103">−</text>
+              <path class="lk" d="M505,154 C536,182 552,202 575,205"/><text class="pol" x="536" y="185">−</text>
+              <path class="lk" d="M760,204 C802,198 822,174 835,160"/><text class="pol" x="802" y="190">+</text>
+              <path class="lk" d="M835,146 C800,118 782,108 760,108"/><text class="pol" x="796" y="120">−</text>
+              <circle cx="785" cy="158" r="22" fill="#fff" stroke="#1f9d57" stroke-width="2"/>
+              <text x="785" y="155" font-size="11" font-weight="700" fill="#1f9d57" text-anchor="middle">B3</text>
+              <text x="785" y="169" font-size="7.5" fill="#1f9d57" text-anchor="middle">bingo asa</text>
+              <rect class="nodeG" x="315" y="322" width="190" height="52" rx="22"/>
+              <text class="nt" x="410" y="346">combustível que falta</text>
+              <text class="small" x="410" y="361">(ao alvo)</text>
+              <rect class="nodeG" x="575" y="322" width="185" height="52" rx="22"/>
+              <text class="nt" x="668" y="346">vazão asa →</text><text class="nt" x="668" y="360">reabastecida</text>
+              <rect class="nodeG" x="835" y="322" width="185" height="52" rx="22"/>
+              <text class="nt" x="928" y="346">combustível da</text><text class="nt" x="928" y="360">reabastecida (em contato)</text>
+              <path class="lk" d="M505,348 L575,348"/><text class="pol" x="536" y="340">+</text>
+              <path class="lk" d="M760,348 L835,348"/><text class="pol" x="796" y="340">+</text>
+              <path class="lk" d="M928,322 C880,282 462,282 410,322"/><text class="pol" x="668" y="278">−</text>
+              <circle cx="668" cy="300" r="21" fill="#fff" stroke="#1f9d57" stroke-width="2"/>
+              <text x="668" y="298" font-size="12" font-weight="700" fill="#1f9d57" text-anchor="middle">B2</text>
+              <text x="668" y="311" font-size="8" fill="#1f9d57" text-anchor="middle">até alvo</text>
+              <rect class="nodeR" x="95" y="540" width="165" height="46" rx="20"/>
+              <text class="nt" x="178" y="559">tempo de espera</text>
+              <text class="small" x="178" y="574">na fila</text>
+              <rect class="nodeR" x="335" y="540" width="180" height="46" rx="20"/>
+              <text class="nt" x="425" y="559">combustível consumido</text>
+              <text class="small" x="425" y="574">na espera</text>
+              <rect class="nodeR" x="595" y="540" width="180" height="46" rx="20"/>
+              <text class="nt" x="685" y="559">combustível que falta</text>
+              <text class="small" x="685" y="574">ao conectar</text>
+              <rect class="nodeR" x="850" y="540" width="190" height="46" rx="20"/>
+              <text class="nt" x="945" y="559">duração do</text>
+              <text class="small" x="945" y="574">reabastecimento</text>
+              <path class="lk" d="M260,563 L335,563"/><text class="pol" x="294" y="555">+</text>
+              <path class="lk" d="M515,563 L595,563"/><text class="pol" x="552" y="555">+</text>
+              <path class="lk" d="M775,563 L850,563"/><text class="pol" x="810" y="555">+</text>
+              <path class="lk" d="M945,586 C884,668 240,668 178,586"/><text class="pol" x="560" y="686">+</text>
+              <circle cx="560" cy="628" r="23" fill="#fff" stroke="#c0631a" stroke-width="2.4"/>
+              <text x="560" y="626" font-size="12" font-weight="700" fill="#c0631a" text-anchor="middle">R1</text>
+              <text x="560" y="640" font-size="8" fill="#c0631a" text-anchor="middle">acúmulo</text>
+              <path class="soft" d="M685,540 C650,470 520,405 438,374"/><text class="pol" x="566" y="442">+</text>
+              <rect class="nodeFail" x="600" y="636" width="205" height="44" rx="20"/>
+              <text class="nt" x="702" y="654" fill="#a02d2d">reabastecida abaixo</text>
+              <text class="nt" x="702" y="669" fill="#a02d2d">do bingo → falha</text>
+              <path class="soft" d="M425,586 C485,628 560,654 600,658"/><text class="pol" x="528" y="638">+</text>
+              <rect class="node" x="300" y="474" width="205" height="38" rx="18" stroke="#c0631a" stroke-dasharray="5,3"/>
+              <text class="nt" x="402" y="490" fill="#7a2d12">volta à fila para top-up</text>
+              <text class="small" x="402" y="503">(concluída reentra)</text>
+              <path class="soft" d="M838,374 C770,430 600,478 507,492"/><text class="pol" x="660" y="452">−</text>
+              <path class="soft" d="M300,496 C250,504 214,512 196,540"/><text class="pol" x="232" y="503">+</text>
+              <text x="402" y="525" font-size="8.5" fill="#c0631a" text-anchor="middle">ciranda (recirculação)</text>
+              <text x="560" y="708" font-size="9.5" fill="#7a8597" text-anchor="middle">nota R1: o retorno "duração do reabastecimento → tempo de espera" é a espera das aeronaves SEGUINTES (visão agregada); o estoque do loop é o combustível da reabastecida.</text>
+              <text x="42" y="736" font-size="10.5" fill="#7a8597"><tspan fill="#1f9d57" font-weight="700">+</tspan> = mesma direção · <tspan fill="#c83a3a" font-weight="700">−</tspan> = direção oposta · <tspan fill="#1f6feb" font-weight="700">B</tspan> = balanceamento · <tspan fill="#c0631a" font-weight="700">R</tspan> = reforço · setas tracejadas = conexões entre faixas · contorno tracejado = repetição da mesma variável</text>
+            </svg>
+          </div>
+        </details>
+      </div>
+
+      <div class="panel magenta">
+        <h2>Ver as contas</h2>
+        <p>A cada passo de tempo <code>dt</code>, o simulador executa quatro fases em ordem: (1) move combustível do <strong>pod para a asa</strong>, (2) decide <strong>quem é atendido</strong> e se o procedimento <strong>pausa</strong>, (3) transfere da <strong>asa para a aeronave</strong> em contato e (4) faz <strong>todas as aeronaves consumirem</strong> combustível, checando reentradas e falhas. Cada fluxo é limitado pela taxa, pelo combustível disponível e pelo espaço/necessidade.</p>
+        <details class="formulas" open>
+          <summary>▾ ver fórmulas (modelo completo)</summary>
+          <p style="color:var(--text);margin:6px 0"><strong>Fase 0 — Consumo da reabastecedora</strong> (quando &gt; 0)</p>
+          <div class="formula-block">Asa ← max(0, Asa − consumo_reabastecedora·dt)   (o motor alimenta-se da asa; o pod não alimenta o motor)</div>
+          <p style="color:var(--text);margin:6px 0"><strong>Fase 1 — Pod → Asa</strong></p>
+          <div class="formula-block">ΔPA = min(X·dt, Pod, AsaMax − Asa)
+Pod ← Pod − ΔPA
+Asa ← Asa + ΔPA</div>
+          <p style="color:var(--text);margin:6px 0"><strong>Fase 2 — Fila e pausa (histerese)</strong></p>
+          <div class="formula-block">sem aeronave em contato e fila não-vazia:
+  inicia atendimento se Asa ≥ Margem de retomada
+
+com aeronave em contato:
+  se Asa ≤ Limiar de pausa    → pausa
+  se em pausa e Asa ≥ Margem  → retoma</div>
+          <p style="color:var(--text);margin:6px 0"><strong>Fase 3 — Asa → Aeronave atendida</strong></p>
+          <div class="formula-block">ΔAR = min(Y·dt, Asa, Alvoᵢ − Combᵢ)
+Asa  ← Asa − ΔAR
+Combᵢ ← Combᵢ + ΔAR
+conclui quando Combᵢ ≥ Alvoᵢ</div>
+          <p style="color:var(--text);margin:6px 0"><strong>Fase 4 — Consumo e gatilhos</strong></p>
+          <div class="formula-block">cᵢ = consumo_contato   se a aeronave está em contato
+cᵢ = consumo_espera    caso contrário (espera ou concluída)
+Combᵢ ← max(0, Combᵢ − cᵢ·dt)
+
+reentrada (tolerância): aeronave concluída volta à fila se
+  Combᵢ &lt; Alvoᵢ − tolerância     (modo: por consumo)
+  Combᵢ &lt; tolerância              (modo: combustível absoluto)</div>
+          <p style="color:var(--text);margin:6px 0"><strong>Detecção de falhas</strong></p>
+          <div class="formula-block">Deadlock : Pod ≈ 0  e  Asa &lt; Margem  e  há aeronave em espera
+Bingo    : aeronave que NÃO está recebendo (inclui a conectada em pausa)
+           com Comb &lt; Bingo fuel
+Tempo    : t &gt; t_max sem todas concluídas
+Sucesso  : todas as aeronaves concluídas simultaneamente</div>
+          <p style="color:var(--text);margin:6px 0"><strong>Conversões (interno: kg e kg/min)</strong></p>
+          <div class="formula-block">lb  → kg     × 0,45359237
+L   → kg     × ρ          (densidade kg/L; padrão 0,804)
+gal → L      × 3,785411784
+qualquer/h → /min    ÷ 60</div>
+        </details>
+      </div>
+
+      <button class="btn" id="introGoSim" style="max-width:340px">▶ Ir para o simulador</button>
+    </div>
+  </section>
+
+  <!-- ===== TAB: SIMULADOR ===== -->
+  <section id="tab-sim" class="tab-panel">
+  <main>
+    <!-- INPUT COLUMN -->
+    <div>
+      <!-- 1. RECEIVERS (necessidade da missão) -->
+      <div class="panel cyan collapsible collapsed">
+        <h2 class="collapse-header">1 · Aeronaves Reabastecidas</h2>
+        <div class="row2">
+          <div class="field">
+            <label>Quantidade</label>
+            <input type="number" id="nAircraft" value="4" min="1" max="20" step="1">
+          </div>
+          <div class="field">
+            <label>Bingo fuel (mín)</label>
+            <div class="input-with-unit">
+              <input type="number" id="bingoFuel" value="300" step="50">
+              <select id="bingoUnit" class="unit-select">
+                <option value="kg">kg</option>
+                <option value="lb">lb</option>
+                <option value="L">L</option>
+                <option value="gal">gal</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="tolerance-block" id="toleranceBlock">
+          <label class="check-line">
+            <input type="checkbox" id="toleranceEnabled">
+            Ativar tolerância de espera pós-reabastecimento
+          </label>
+          <div class="tol-help">
+            Aplica-se apenas a aeronaves que <strong>já atingiram o alvo</strong> e estão aguardando as demais. Se durante a espera o combustível cair abaixo deste limite, a aeronave retorna à fila para um novo encaixe.
+          </div>
+          <div class="tol-config">
+            <div class="field">
+              <label>Modo do limite</label>
+              <select id="toleranceMode">
+                <option value="delta">Por consumo desde a conclusão</option>
+                <option value="absolute">Por combustível absoluto</option>
+              </select>
+            </div>
+            <div class="field" id="uniformToleranceField">
+              <label>Valor do limite (todas)</label>
+              <input type="number" id="uniformTolerance" value="300" step="50">
+              <p class="info-line" id="toleranceModeHint" style="margin-top:4px">Reentra na fila se consumir mais que este valor desde que concluiu (mesma unidade da aeronave).</p>
+            </div>
+          </div>
+        </div>
+
+        <label style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:6px;">Modo de configuração</label>
+        <div class="toggle-group">
+          <button class="active" data-mode="uniform" id="modeUniform">Uniforme</button>
+          <button data-mode="per" id="modePer">Por aeronave</button>
+        </div>
+
+        <div id="uniformInputs">
+          <div class="row2">
+            <div class="field">
+              <label>Comb. inicial (todas)</label>
+              <div class="input-with-unit">
+                <input type="number" id="uniformInitial" value="1500" step="50">
+                <select id="uniformMassUnit" class="unit-select">
+                  <option value="kg">kg</option>
+                  <option value="lb">lb</option>
+                  <option value="L">L</option>
+                  <option value="gal">gal</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Comb. alvo (todas)</label>
+              <input type="number" id="uniformTarget" value="5000" step="50">
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label>Consumo em espera</label>
+              <div class="input-with-unit">
+                <input type="number" id="uniformConsumption" value="50" step="5">
+                <select id="uniformFlowUnit" class="unit-select">
+                  <option value="kg/min">kg/min</option>
+                  <option value="kg/h">kg/h</option>
+                  <option value="lb/min">lb/min</option>
+                  <option value="lb/h">lb/h</option>
+                  <option value="L/min">L/min</option>
+                  <option value="L/h">L/h</option>
+                  <option value="gal/min">gal/min</option>
+                  <option value="gal/h">gal/h</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Consumo em contato</label>
+              <input type="number" id="uniformConsumptionContact" value="30" step="5">
+            </div>
+          </div>
+          <p class="info-line">"Em contato" = enquanto está recebendo combustível da reabastecedora (regime normalmente mais baixo que em espera). Usa as mesmas unidades.</p>
+        </div>
+
+        <div id="perAircraftInputs" style="display:none">
+          <div class="per-aircraft-header" id="perAircraftHeader">
+            <div></div>
+            <div class="col-label">Init.</div>
+            <div class="col-label">Alvo</div>
+            <div class="col-label">C. esp.</div>
+            <div class="col-label">C. cont.</div>
+            <div class="col-label tol-col" style="color:var(--yellow)">Toler.</div>
+            <div class="col-label">Massa</div>
+            <div class="col-label">Fluxo</div>
+          </div>
+          <div class="per-aircraft-list" id="perAircraftList"></div>
+        </div>
+      </div>
+
+      <!-- 2. TANKER -->
+      <div class="panel collapsible collapsed">
+        <h2 class="collapse-header">2 · Aeronave Reabastecedora</h2>
+
+        <!-- Unidades (precisam vir antes — afetam tudo abaixo e a sugestão) -->
+        <div class="unit-bar" style="grid-template-columns: 1fr 1fr 1fr;">
+          <div class="field">
+            <label>Unid. massa/vol</label>
+            <select id="tankerMassUnit" class="unit-select">
+              <option value="kg">kg</option>
+              <option value="lb">lb</option>
+              <option value="L">L</option>
+              <option value="gal">gal (US)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Unid. fluxo</label>
+            <select id="tankerFlowUnit" class="unit-select">
+              <option value="kg/min">kg/min</option>
+              <option value="kg/h">kg/h</option>
+              <option value="lb/min">lb/min</option>
+              <option value="lb/h">lb/h</option>
+              <option value="L/min">L/min</option>
+              <option value="L/h">L/h</option>
+              <option value="gal/min">gal/min</option>
+              <option value="gal/h">gal/h</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Densidade (kg/L)</label>
+            <input type="number" id="density" value="0.804" step="0.001" min="0.5" max="1.2">
+          </div>
+        </div>
+
+        <!-- (a) Plataforma fixa (propriedades da aeronave reabastecedora) -->
+        <details class="sub-block" id="platformBlock" open>
+          <summary>(a) Plataforma fixa — propriedades do reabastecedor</summary>
+          <div class="sub-body">
+            <div class="row2">
+              <div class="field">
+                <label>Fluxo X (pod → asa)</label>
+                <input type="number" id="flowX" value="1500" step="50">
+              </div>
+              <div class="field">
+                <label>Fluxo Y (asa → reabast.)</label>
+                <input type="number" id="flowY" value="2500" step="50">
+              </div>
+            </div>
+            <div class="field">
+              <label>Capacidade máx. asa</label>
+              <input type="number" id="wingMax" value="8000" step="100">
+            </div>
+            <div class="row2">
+              <div class="field">
+                <label>Limiar pausa (asa baixa)</label>
+                <input type="number" id="wingPause" value="500" step="50">
+              </div>
+              <div class="field">
+                <label>Margem retomada (asa)</label>
+                <input type="number" id="wingResume" value="2000" step="50">
+              </div>
+            </div>
+            <div class="field">
+              <label>Consumo da reabastecedora (em voo)</label>
+              <input type="number" id="tankerBurn" value="0" step="5" min="0">
+              <p class="info-line" style="margin-top:4px">Combustível que a própria reabastecedora queima por unidade de tempo (drenado da asa — o motor alimenta-se da asa; o pod não alimenta o motor). Use a unidade de fluxo definida acima. 0 = ignora.</p>
+            </div>
+            <p class="info-line">Propriedades do reabastecedor — mudam pouco entre missões. Recolha este bloco depois de configurar a plataforma.</p>
+          </div>
+        </details>
+
+        <!-- (b) Combustível embarcado (variável da missão) -->
+        <div class="sub-block highlighted">
+          <div class="sub-header">(b) Combustível embarcado nesta missão</div>
+          <div class="sub-body">
+            <div class="suggest-bar">
+              <button type="button" class="btn-suggest" id="suggestBtn">⚙ Sugerir combustível</button>
+              <div class="suggest-folga">
+                <label>Folga (%)</label>
+                <input type="number" id="suggestFolga" value="15" min="0" max="100" step="1">
+              </div>
+            </div>
+            <div id="suggestDetail" class="suggest-detail" style="display:none"></div>
+            <div class="row2">
+              <div class="field">
+                <label>Comb. pod inicial</label>
+                <input type="number" id="podInitial" value="30000" step="500">
+              </div>
+              <div class="field">
+                <label>Comb. asa inicial</label>
+                <input type="number" id="wingInitial" value="6000" step="100">
+              </div>
+            </div>
+            <p class="info-line">Valores na unidade escolhida acima. Internamente convertido para kg + kg/min.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. SCENARIOS -->
+      <div class="panel magenta collapsible collapsed">
+        <h2 class="collapse-header">3 · Cenários</h2>
+        <div class="field" style="margin-bottom:12px">
+          <label for="exampleScenario">Cenários de exemplo</label>
+          <select id="exampleScenario">
+            <option value="">— selecione um exemplo —</option>
+            <option value="nominal">Nominal — operação tranquila (3 aeronaves, sem pausas)</option>
+            <option value="limite">No limite — pausas + reentrada (4 aeronaves)</option>
+            <option value="falha">Falha — gargalo de fluxo X≪Y inviabiliza a espera (4 aeronaves)</option>
+          </select>
+          <p class="info-line" style="margin-top:4px">Carrega valores didáticos e roda na hora. Edite à vontade depois.</p>
+        </div>
+        <div class="row2">
+          <button type="button" class="btn-scenario" id="saveScenarioBtn">⇩ Salvar (.json)</button>
+          <button type="button" class="btn-scenario" id="loadScenarioBtn">⇧ Carregar (.json)</button>
+        </div>
+        <input type="file" id="loadScenarioInput" accept=".json,application/json" style="display:none">
+        <p class="info-line" id="scenarioStatus" style="margin-top:8px">Estado mantido apenas durante esta sessão do navegador (não é salvo no servidor).</p>
+      </div>
+
+      <!-- 4. SIMULATION -->
+      <div class="panel green collapsible collapsed">
+        <h2 class="collapse-header">4 · Parâmetros de Simulação</h2>
+        <div class="row2">
+          <div class="field">
+            <label>Passo dt (min)</label>
+            <input type="number" id="dt" value="0.5" step="0.1" min="0.1">
+          </div>
+          <div class="field">
+            <label>Tempo máx. (min)</label>
+            <input type="number" id="maxTime" value="240" step="10" min="10">
+          </div>
+        </div>
+        <div class="field">
+          <label>Política de fila</label>
+          <select id="queuePolicy">
+            <option value="arrival">Ordem de chegada (reentradas no fim da fila)</option>
+            <option value="lowest">Menor combustível primeiro</option>
+          </select>
+          <p class="info-line" style="margin-top:4px">Define a próxima aeronave a ser atendida quando a reabastecedora fica livre. Só importa quando há mais de uma esperando — inclusive reentradas.</p>
+        </div>
+        <button class="btn" id="runBtn">▶ Executar Simulação</button>
+        <button class="btn btn-secondary" id="thresholdBtn">⊕ Analisar Threshold</button>
+        <p class="info-line">Threshold faz sweep N=1..N_max com config uniforme atual, detecta máx. aeronaves viável.</p>
+      </div>
+    </div>
+
+    <!-- RESULTS COLUMN -->
+    <div>
+      <div id="warningArea"></div>
+
+      <div id="emptyHint" class="empty-hint">Nenhuma simulação executada ainda. Configure os painéis <strong>1–4</strong> (ou carregue um cenário de exemplo no painel <strong>3 · Cenários</strong>) e clique <strong>▶ Executar Simulação</strong>.</div>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="label">Tempo total</div>
+          <div class="value" id="metricTime">—<span class="unit">min</span></div>
+        </div>
+        <div class="metric cyan">
+          <div class="label">Pausas (asa)</div>
+          <div class="value" id="metricPauses">—</div>
+        </div>
+        <div class="metric green">
+          <div class="label">Reabastec. concluídas</div>
+          <div class="value" id="metricDone">—</div>
+        </div>
+        <div class="metric red">
+          <div class="label">Tempo total pausado</div>
+          <div class="value" id="metricPauseTime">—<span class="unit">min</span></div>
+        </div>
+        <div class="metric yellow">
+          <div class="label">Reconexões pós-alvo</div>
+          <div class="value" id="metricReconnects">—</div>
+        </div>
+      </div>
+
+      <!-- VIZ PANEL (acima do gráfico) -->
+      <div class="panel" id="vizPanel" style="margin-bottom:18px">
+        <h2>Visualização da Operação</h2>
+        <div class="viz-controls">
+          <button id="vizPlayBtn">▶ Play</button>
+          <button id="vizResetBtn" style="background:var(--text-dim)">⟲ Reset</button>
+          <input type="range" id="vizScrubber" min="0" max="1000" value="0" step="1">
+          <span class="viz-time" id="vizTime">t = 0.0 min</span>
+          <select id="vizSpeed">
+            <option value="2">2×</option>
+            <option value="5" selected>5×</option>
+            <option value="10">10×</option>
+            <option value="20">20×</option>
+            <option value="40">40×</option>
+          </select>
+        </div>
+        <canvas id="vizCanvas"></canvas>
+        <p class="info-line" style="margin-top:8px">Cena 3D projetada: reabastecedora ao centro, fila em órbita de espera, aeronave em contato no plano inferior e rastro verde quando há transferência ativa.</p>
+      </div>
+
+      <div class="panel cyan" id="studyPanel" style="margin-bottom:18px">
+        <h2>Estudo Operacional e Ontologia</h2>
+        <div class="study-grid">
+          <div class="study-card">
+            <h3>Leitura da Simulação</h3>
+            <div id="studyFindings" class="study-list">
+              <div class="study-item">Execute uma simulação para gerar diagnóstico, gargalos e margens.</div>
+            </div>
+          </div>
+          <div class="study-card">
+            <h3>Ontologia AAR</h3>
+            <div id="ontologyMap" class="ontology-map">
+              <div class="ontology-row">
+                <div class="ontology-node alt">Reabastecedora</div>
+                <div class="ontology-edge">tem</div>
+                <div class="ontology-node">Pod e Asa</div>
+              </div>
+              <div class="ontology-row">
+                <div class="ontology-node alt">Fluxo X</div>
+                <div class="ontology-edge">alimenta</div>
+                <div class="ontology-node">Asa</div>
+              </div>
+              <div class="ontology-row">
+                <div class="ontology-node alt">Fluxo Y</div>
+                <div class="ontology-edge">atende</div>
+                <div class="ontology-node">Aeronave em contato</div>
+              </div>
+              <div class="ontology-row">
+                <div class="ontology-node alt">Fila</div>
+                <div class="ontology-edge">consome</div>
+                <div class="ontology-node">Margem até bingo</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-wrapper">
+        <div class="chart-header">
+          <div class="chart-title">Combustível × Tempo</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="chart-title">display:</span>
+            <select id="displayUnit" class="display-unit-select">
+              <option value="kg">kg</option>
+              <option value="lb">lb</option>
+              <option value="L">L</option>
+              <option value="gal">gal</option>
+            </select>
+          </div>
+        </div>
+        <canvas id="fuelChart"></canvas>
+      </div>
+
+      <div class="event-log collapsible collapsed">
+        <div class="chart-title collapse-header" style="margin-bottom:10px;">Log de Eventos</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:80px">Tempo</th>
+              <th style="width:110px">Evento</th>
+              <th>Detalhe</th>
+            </tr>
+          </thead>
+          <tbody id="eventTbody">
+            <tr><td colspan="3" style="color:var(--text-dim);text-align:center;padding:20px">Sem eventos. Execute a simulação.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- THRESHOLD PANEL -->
+      <div class="panel magenta" id="thresholdPanel" style="display:none">
+        <h2>Análise de Threshold</h2>
+        <div id="thNotes" class="th-notes"></div>
+        <div class="threshold-summary">
+          <div class="metric magenta">
+            <div class="label">Máx. aeronaves (no tempo)</div>
+            <div class="value" id="thMaxN">—</div>
+          </div>
+          <div class="metric magenta">
+            <div class="label">Tempo @ máx</div>
+            <div class="value" id="thMaxTime">—<span class="unit">min</span></div>
+          </div>
+          <div class="metric magenta">
+            <div class="label">Limitante em N+1</div>
+            <div class="value" id="thFailReason" style="font-size:13px">—</div>
+          </div>
+          <div class="metric magenta">
+            <div class="label">Margem ao bingo @ máx</div>
+            <div class="value" id="thMargin">—<span class="unit">kg</span></div>
+          </div>
+          <div class="metric magenta">
+            <div class="label">Reconexões @ máx</div>
+            <div class="value" id="thRecon">—</div>
+          </div>
+        </div>
+        <div class="chart-wrapper" style="height:300px;margin-bottom:0">
+          <div class="chart-header">
+            <div class="chart-title">N aeronaves × Tempo total</div>
+          </div>
+          <canvas id="thresholdChart"></canvas>
+        </div>
+        <div class="th-legend">
+          <span><i style="background:#5ee07f"></i>viável no tempo</span>
+          <span><i style="background:#ffb13b"></i>fecha além do tempo</span>
+          <span><i style="background:#ff5a5a"></i>falha física (deadlock/bingo)</span>
+          <span><i style="background:#d77bff"></i>não converge</span>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer>
+    Projeto derivado de <a href="https://github.com/YgorLog/sim-aar" target="_blank" rel="noopener noreferrer">YgorLog/sim-aar</a>.
+  </footer>
+  </section>
+</div>
+
+<script>
+'use strict';
+
+// ====== UNITS ======
+// Internal canonical: kg and kg/min
+// Volume units (L, gal) require fuel density (kg/L), read from #density input.
+const GAL_TO_L = 3.785411784;
+function getDensity() {
+  const el = document.getElementById('density');
+  const v = el ? +el.value : 0.804;
+  return (v && v > 0) ? v : 0.804;
+}
+function massFactor(u) {
+  const d = getDensity();
+  return ({ kg: 1, lb: 0.45359237, L: d, gal: GAL_TO_L * d })[u] || 1;
+}
+function flowFactor(u) {
+  const d = getDensity();
+  return ({
+    'kg/min': 1, 'kg/h': 1/60,
+    'lb/min': 0.45359237, 'lb/h': 0.45359237/60,
+    'L/min': d, 'L/h': d/60,
+    'gal/min': GAL_TO_L * d, 'gal/h': GAL_TO_L * d / 60
+  })[u] || 1;
+}
+const toKg = (v, u) => v * massFactor(u);
+const fromKg = (v, u) => v / massFactor(u);
+const toKgMin = (v, u) => v * flowFactor(u);
+
+const $ = id => document.getElementById(id);
+const colors = ['#4ddbff', '#5ee07f', '#d77bff', '#ffe05e', '#ff8c5a', '#7bdfff', '#a4ff8c', '#ffacd9', '#ffd47a', '#9bb5ff', '#ff7a9e', '#7affd1', '#c8e87a', '#ff9ff0', '#7affff', '#ffcc99', '#b3ffb3', '#ffb3b3', '#b3b3ff', '#ffe6b3'];
+
+let mode = 'uniform';
+let fuelChart = null;
+let thresholdChart = null;
+
+// ====== TOLERANCE UI ======
+function updateToleranceUI() {
+  const on = $('toleranceEnabled').checked;
+  $('toleranceBlock').classList.toggle('on', on);
+  const list = $('perAircraftList');
+  if (list) list.classList.toggle('tolerance-on', on);
+  const hdr = $('perAircraftHeader');
+  if (hdr) hdr.classList.toggle('tolerance-on', on);
+  updateToleranceHint();
+}
+function updateToleranceHint() {
+  const mode = $('toleranceMode').value;
+  const hint = $('toleranceModeHint');
+  if (!hint) return;
+  if (mode === 'delta') {
+    hint.textContent = 'Reentra na fila se consumir mais que este valor desde que concluiu (mesma unidade da aeronave).';
+  } else {
+    hint.textContent = 'Reentra na fila se o combustível absoluto cair abaixo deste valor (mesma unidade da aeronave).';
+  }
+}
+$('toleranceEnabled').addEventListener('change', updateToleranceUI);
+$('toleranceMode').addEventListener('change', updateToleranceHint);
+
+// ====== MODE TOGGLE ======
+document.querySelectorAll('.toggle-group button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.toggle-group button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    mode = btn.dataset.mode;
+    $('uniformInputs').style.display = mode === 'uniform' ? 'block' : 'none';
+    $('perAircraftInputs').style.display = mode === 'per' ? 'block' : 'none';
+    if (mode === 'per') renderPerAircraft();
+  });
+});
+
+$('nAircraft').addEventListener('change', () => {
+  if (mode === 'per') renderPerAircraft();
+});
+
+function renderPerAircraft() {
+  const n = Math.max(1, Math.min(20, parseInt($('nAircraft').value) || 1));
+  $('nAircraft').value = n;
+  const list = $('perAircraftList');
+  const oldVals = [];
+  list.querySelectorAll('.per-aircraft-row').forEach(r => {
+    const inputs = r.querySelectorAll('input');
+    const selects = r.querySelectorAll('select');
+    oldVals.push({
+      init: inputs[0].value,
+      target: inputs[1].value,
+      cons: inputs[2].value,
+      consContact: inputs[3].value,
+      tol: inputs[4] ? inputs[4].value : null,
+      mass: selects[0].value,
+      flow: selects[1].value
+    });
+  });
+  list.innerHTML = '';
+  const defInit = $('uniformInitial').value;
+  const defTarget = $('uniformTarget').value;
+  const defCons = $('uniformConsumption').value;
+  const defConsContact = $('uniformConsumptionContact').value;
+  const defTol = $('uniformTolerance').value;
+  const defMass = $('uniformMassUnit').value;
+  const defFlow = $('uniformFlowUnit').value;
+  for (let i = 0; i < n; i++) {
+    const row = document.createElement('div');
+    row.className = 'per-aircraft-row';
+    const o = oldVals[i] || {};
+    row.innerHTML = `
+      <div class="ac-label">A${i+1}</div>
+      <input type="number" step="50" value="${o.init || defInit}">
+      <input type="number" step="50" value="${o.target || defTarget}">
+      <input type="number" step="5"  value="${o.cons || defCons}">
+      <input type="number" step="5"  value="${o.consContact || defConsContact}">
+      <div class="tol-cell"><input type="number" step="50" value="${o.tol || defTol}"></div>
+      <select>
+        <option value="kg"  ${(o.mass||defMass)==='kg'?'selected':''}>kg</option>
+        <option value="lb"  ${(o.mass||defMass)==='lb'?'selected':''}>lb</option>
+        <option value="L"   ${(o.mass||defMass)==='L'?'selected':''}>L</option>
+        <option value="gal" ${(o.mass||defMass)==='gal'?'selected':''}>gal</option>
+      </select>
+      <select>
+        <option value="kg/min"  ${(o.flow||defFlow)==='kg/min'?'selected':''}>kg/min</option>
+        <option value="kg/h"    ${(o.flow||defFlow)==='kg/h'?'selected':''}>kg/h</option>
+        <option value="lb/min"  ${(o.flow||defFlow)==='lb/min'?'selected':''}>lb/min</option>
+        <option value="lb/h"    ${(o.flow||defFlow)==='lb/h'?'selected':''}>lb/h</option>
+        <option value="L/min"   ${(o.flow||defFlow)==='L/min'?'selected':''}>L/min</option>
+        <option value="L/h"     ${(o.flow||defFlow)==='L/h'?'selected':''}>L/h</option>
+        <option value="gal/min" ${(o.flow||defFlow)==='gal/min'?'selected':''}>gal/min</option>
+        <option value="gal/h"   ${(o.flow||defFlow)==='gal/h'?'selected':''}>gal/h</option>
+      </select>
+    `;
+    list.appendChild(row);
+  }
+  updateToleranceUI();
+}
+
+// ====== SIMULATION (canonical units: kg + kg/min) ======
+// p.aircraft[i] = { initial, target, consumption, consumptionContact, toleranceValue } (canonical)
+// p.toleranceEnabled : boolean
+// p.toleranceMode    : 'delta' | 'absolute'
+// p.queuePolicy      : 'arrival' | 'lowest'
+function simulate(p) {
+  let pod = p.podInitial;
+  let wing = p.wingInitial;
+  const fuel = p.aircraft.map(a => a.initial);
+  const status = p.aircraft.map(() => 'waiting');
+  const startTime = p.aircraft.map(() => null);
+  const finishTime = p.aircraft.map(() => null);
+  // Queue order — initial fleet enters in index order; reentries get the next order number
+  const queueOrder = p.aircraft.map((_, i) => i);
+  let nextQueueOrder = p.aircraft.length;
+  // Times each aircraft has been (re)connected
+  const visits = p.aircraft.map(() => 0);
+  let reconnects = 0;
+
+  let currentIdx = null;
+  let isPaused = false;
+  let pauseStartT = null;
+  let pauseAccum = 0;
+
+  const hist = { t: [], pod: [], wing: [], fuel: p.aircraft.map(() => []), currentIdx: [], statuses: [], visits: p.aircraft.map(() => []) };
+  const events = [];
+
+  function toleranceThreshold(i) {
+    const ac = p.aircraft[i];
+    if (p.toleranceMode === 'absolute') return ac.toleranceValue;
+    return ac.target - ac.toleranceValue; // delta
+  }
+
+  function pickNext() {
+    const waiting = [];
+    for (let i = 0; i < p.aircraft.length; i++) if (status[i] === 'waiting') waiting.push(i);
+    if (!waiting.length) return null;
+    if (p.queuePolicy === 'lowest') {
+      // Aircraft with lowest absolute fuel first (tiebreak: lower queueOrder)
+      waiting.sort((a, b) => (fuel[a] - fuel[b]) || (queueOrder[a] - queueOrder[b]));
+      return waiting[0];
+    }
+    // 'arrival' — lowest queueOrder first (initial fleet before reentries by construction)
+    waiting.sort((a, b) => queueOrder[a] - queueOrder[b]);
+    return waiting[0];
+  }
+
+  let t = 0;
+  const maxIter = Math.ceil(p.maxTime / p.dt) + 5;
+  let iter = 0;
+  let stuckCounter = 0;
+  let bingoFail = false;
+  let bingoIdx = null;
+
+  while (t <= p.maxTime + 1e-6 && iter < maxIter) {
+    iter++;
+    hist.t.push(+t.toFixed(4));
+    hist.pod.push(+pod.toFixed(4));
+    hist.wing.push(+wing.toFixed(4));
+    fuel.forEach((f, i) => hist.fuel[i].push(+f.toFixed(4)));
+    hist.currentIdx.push(currentIdx);
+    hist.statuses.push(status.slice());
+    hist.visits.push(visits.slice());
+
+    // 0) Consumo de voo da própria reabastecedora: o motor alimenta-se da ASA.
+    //    O pod NÃO alimenta o motor — ele só reabastece a asa via Fluxo X.
+    if (p.tankerBurn) {
+      wing = Math.max(0, wing - p.tankerBurn * p.dt);
+    }
+
+    // 1) Pod → Wing
+    const podToWing = Math.min(p.flowX * p.dt, pod, p.wingMax - wing);
+    pod -= podToWing;
+    wing += podToWing;
+
+    // 2) State management
+    if (currentIdx === null) {
+      const next = pickNext();
+      if (next !== null && wing >= p.wingResume) {
+        currentIdx = next;
+        status[next] = 'refueling';
+        const isFirstVisit = visits[next] === 0;
+        visits[next]++;
+        if (isFirstVisit) {
+          startTime[next] = t;
+          events.push({ time: t, type: 'start', text: `Início do reabastecimento de A${next+1}` });
+        } else {
+          events.push({ time: t, type: 'start-topup', text: `Reencaixe de A${next+1} (visita ${visits[next]})` });
+        }
+      }
+    } else {
+      if (!isPaused && wing <= p.wingPause) {
+        isPaused = true;
+        pauseStartT = t;
+        events.push({ time: t, type: 'pause', text: `Pausa — asa em ${wing.toFixed(0)} kg (A${currentIdx+1})` });
+      } else if (isPaused && wing >= p.wingResume) {
+        isPaused = false;
+        pauseAccum += (t - pauseStartT);
+        events.push({ time: t, type: 'resume', text: `Retomada — asa em ${wing.toFixed(0)} kg (A${currentIdx+1})` });
+        pauseStartT = null;
+      }
+    }
+
+    // 3) Wing → current aircraft
+    if (currentIdx !== null && !isPaused) {
+      const ac = p.aircraft[currentIdx];
+      const need = Math.max(0, ac.target - fuel[currentIdx]);
+      const transfer = Math.min(p.flowY * p.dt, wing, need);
+      wing -= transfer;
+      fuel[currentIdx] += transfer;
+      if (fuel[currentIdx] >= ac.target - 1e-6) {
+        status[currentIdx] = 'done';
+        finishTime[currentIdx] = t + p.dt;
+        events.push({ time: t + p.dt, type: 'complete', text: `A${currentIdx+1} alvo atingido (visita ${visits[currentIdx]})` });
+        currentIdx = null;
+      }
+    }
+
+    // 4) Consumption + tolerance-trigger + bingo check
+    for (let i = 0; i < p.aircraft.length; i++) {
+      if (status[i] === 'refueling') {
+        fuel[i] = Math.max(0, fuel[i] - p.aircraft[i].consumptionContact * p.dt);
+      } else {
+        // waiting or done — consume at the waiting rate
+        fuel[i] = Math.max(0, fuel[i] - p.aircraft[i].consumption * p.dt);
+      }
+      // Tolerance trigger: a 'done' aircraft that drops below its threshold returns to the queue
+      if (status[i] === 'done' && p.toleranceEnabled) {
+        const thr = toleranceThreshold(i);
+        if (fuel[i] < thr - 1e-6) {
+          status[i] = 'waiting';
+          queueOrder[i] = nextQueueOrder++;
+          reconnects++;
+          events.push({ time: t + p.dt, type: 'topup', text: `A${i+1} cruzou tolerância (${fuel[i].toFixed(0)} kg < ${thr.toFixed(0)} kg) — retorna à fila` });
+        }
+      }
+      // Bingo: vale para qualquer aeronave que NÃO esteja recebendo combustível
+      // neste passo. A aeronave conectada porém em PAUSA (queima sem receber)
+      // também é checada — só fica isenta enquanto efetivamente abastece.
+      const recebendo = (i === currentIdx && !isPaused);
+      if (!recebendo && fuel[i] < p.bingoFuel && !bingoFail) {
+        bingoFail = true;
+        bingoIdx = i;
+        events.push({ time: t, type: 'bingo', text: `A${i+1} atingiu bingo fuel (${fuel[i].toFixed(0)} kg < ${p.bingoFuel.toFixed(0)} kg)` });
+      }
+    }
+    if (bingoFail) break;
+
+    // 5) Deadlock detection
+    if (pod < 1e-3 && wing < p.wingResume && currentIdx === null && status.some(s => s === 'waiting')) {
+      stuckCounter++;
+      if (stuckCounter > 5) {
+        events.push({ time: t, type: 'deadlock', text: 'Sistema travado: pod vazio e asa abaixo da margem' });
+        break;
+      }
+    } else {
+      stuckCounter = 0;
+    }
+
+    if (status.every(s => s === 'done')) {
+      t += p.dt;
+      hist.t.push(+t.toFixed(4));
+      hist.pod.push(+pod.toFixed(4));
+      hist.wing.push(+wing.toFixed(4));
+      fuel.forEach((f, i) => hist.fuel[i].push(+f.toFixed(4)));
+      hist.currentIdx.push(null);
+      hist.statuses.push(status.slice());
+      hist.visits.push(visits.slice());
+      break;
+    }
+    t += p.dt;
+  }
+  if (isPaused && pauseStartT !== null) pauseAccum += (t - pauseStartT);
+
+  const doneCount = status.filter(s => s === 'done').length;
+  const pauses = events.filter(e => e.type === 'pause').length;
+  const deadlock = events.some(e => e.type === 'deadlock');
+  const allDone = status.every(s => s === 'done');
+
+  let failReason = null;
+  if (!allDone) {
+    if (deadlock) failReason = 'deadlock';
+    else if (bingoFail) failReason = 'bingo';
+    else failReason = 'time';
+  }
+
+  return {
+    hist, events, finalT: t, doneCount, totalAircraft: p.aircraft.length,
+    pauses, pauseTime: pauseAccum, allDone, deadlock, bingoFail, failReason,
+    reconnects, visits
+  };
+}
+
+// ====== SCENARIO SAVE/LOAD ======
+const SCENARIO_VERSION = 1;
+const LS_KEY = 'simAAR.lastScenario.v1';
+
+function serializeScenario() {
+  const data = {
+    version: SCENARIO_VERSION,
+    savedAt: new Date().toISOString(),
+    mode,
+    tanker: {
+      massUnit: $('tankerMassUnit').value,
+      flowUnit: $('tankerFlowUnit').value,
+      density: +$('density').value,
+      flowX: +$('flowX').value,
+      flowY: +$('flowY').value,
+      wingMax: +$('wingMax').value,
+      wingPause: +$('wingPause').value,
+      wingResume: +$('wingResume').value,
+      tankerBurn: +$('tankerBurn').value,
+      podInitial: +$('podInitial').value,
+      wingInitial: +$('wingInitial').value
+    },
+    receivers: {
+      nAircraft: +$('nAircraft').value,
+      bingoFuel: +$('bingoFuel').value,
+      bingoUnit: $('bingoUnit').value,
+      tolerance: {
+        enabled: $('toleranceEnabled').checked,
+        mode: $('toleranceMode').value,
+        uniformValue: +$('uniformTolerance').value
+      },
+      uniform: {
+        initial: +$('uniformInitial').value,
+        target: +$('uniformTarget').value,
+        consumption: +$('uniformConsumption').value,
+        consumptionContact: +$('uniformConsumptionContact').value,
+        massUnit: $('uniformMassUnit').value,
+        flowUnit: $('uniformFlowUnit').value
+      },
+      perAircraft: []
+    },
+    simulation: {
+      dt: +$('dt').value,
+      maxTime: +$('maxTime').value,
+      queuePolicy: $('queuePolicy').value,
+      suggestFolga: +$('suggestFolga').value
+    }
+  };
+  if (mode === 'per') {
+    const rows = $('perAircraftList').querySelectorAll('.per-aircraft-row');
+    rows.forEach(r => {
+      const inputs = r.querySelectorAll('input');
+      const selects = r.querySelectorAll('select');
+      data.receivers.perAircraft.push({
+        initial: +inputs[0].value,
+        target: +inputs[1].value,
+        consumption: +inputs[2].value,
+        consumptionContact: +inputs[3].value,
+        tolerance: inputs[4] ? +inputs[4].value : +$('uniformTolerance').value,
+        massUnit: selects[0].value,
+        flowUnit: selects[1].value
+      });
+    });
+  }
+  return data;
+}
+
+function applyScenario(data) {
+  if (!data || data.version !== SCENARIO_VERSION) {
+    alert('Versão de cenário não reconhecida.');
+    return false;
+  }
+  // Tanker
+  $('tankerMassUnit').value = data.tanker.massUnit;
+  $('tankerFlowUnit').value = data.tanker.flowUnit;
+  $('density').value = data.tanker.density;
+  $('flowX').value = data.tanker.flowX;
+  $('flowY').value = data.tanker.flowY;
+  $('wingMax').value = data.tanker.wingMax;
+  $('wingPause').value = data.tanker.wingPause;
+  $('wingResume').value = data.tanker.wingResume;
+  $('tankerBurn').value = data.tanker.tankerBurn != null ? data.tanker.tankerBurn : 0;
+  $('podInitial').value = data.tanker.podInitial;
+  $('wingInitial').value = data.tanker.wingInitial;
+  // Receivers
+  $('nAircraft').value = data.receivers.nAircraft;
+  $('bingoFuel').value = data.receivers.bingoFuel;
+  $('bingoUnit').value = data.receivers.bingoUnit;
+  $('toleranceEnabled').checked = !!data.receivers.tolerance.enabled;
+  $('toleranceMode').value = data.receivers.tolerance.mode;
+  $('uniformTolerance').value = data.receivers.tolerance.uniformValue;
+  $('uniformInitial').value = data.receivers.uniform.initial;
+  $('uniformTarget').value = data.receivers.uniform.target;
+  $('uniformConsumption').value = data.receivers.uniform.consumption;
+  $('uniformConsumptionContact').value = data.receivers.uniform.consumptionContact;
+  $('uniformMassUnit').value = data.receivers.uniform.massUnit;
+  $('uniformFlowUnit').value = data.receivers.uniform.flowUnit;
+  // Simulation
+  $('dt').value = data.simulation.dt;
+  $('maxTime').value = data.simulation.maxTime;
+  $('queuePolicy').value = data.simulation.queuePolicy;
+  if (data.simulation.suggestFolga !== undefined) $('suggestFolga').value = data.simulation.suggestFolga;
+  // Mode
+  mode = data.mode === 'per' ? 'per' : 'uniform';
+  document.querySelectorAll('.toggle-group button').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  $('uniformInputs').style.display = mode === 'uniform' ? 'block' : 'none';
+  $('perAircraftInputs').style.display = mode === 'per' ? 'block' : 'none';
+  if (mode === 'per') {
+    renderPerAircraft();
+    // Re-apply per-aircraft values (renderPerAircraft uses defaults; override with saved values)
+    setTimeout(() => {
+      const rows = $('perAircraftList').querySelectorAll('.per-aircraft-row');
+      data.receivers.perAircraft.forEach((acData, i) => {
+        if (!rows[i]) return;
+        const inputs = rows[i].querySelectorAll('input');
+        const selects = rows[i].querySelectorAll('select');
+        if (inputs[0]) inputs[0].value = acData.initial;
+        if (inputs[1]) inputs[1].value = acData.target;
+        if (inputs[2]) inputs[2].value = acData.consumption;
+        if (inputs[3]) inputs[3].value = acData.consumptionContact;
+        if (inputs[4]) inputs[4].value = acData.tolerance;
+        if (selects[0]) selects[0].value = acData.massUnit;
+        if (selects[1]) selects[1].value = acData.flowUnit;
+      });
+    }, 0);
+  }
+  updateToleranceUI();
+  return true;
+}
+
+function saveScenarioFile() {
+  const data = serializeScenario();
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  a.href = url;
+  a.download = `cenario-aar-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function loadScenarioFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (applyScenario(data)) {
+        $('scenarioStatus').textContent = `Cenário carregado de "${file.name}".`;
+        runSim();
+      }
+    } catch (err) {
+      alert('Falha ao ler o JSON: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Persistência apenas na sessão do navegador (sessionStorage): o estado vive
+// enquanto a aba está aberta e some ao fechá-la. Não vaza entre usuários em
+// máquina compartilhada e nunca toca o servidor.
+function saveScenarioLocal() {
+  try {
+    sessionStorage.setItem(LS_KEY, JSON.stringify(serializeScenario()));
+  } catch (e) { /* sessionStorage may be disabled */ }
+}
+
+function loadScenarioLocal() {
+  try {
+    const raw = sessionStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (applyScenario(data)) {
+      const when = data.savedAt ? new Date(data.savedAt).toLocaleString('pt-BR') : '—';
+      $('scenarioStatus').textContent = `Estado da sessão restaurado (de ${when}).`;
+      return true;
+    }
+  } catch (e) { /* corrupt */ }
+  return false;
+}
+
+$('saveScenarioBtn').addEventListener('click', saveScenarioFile);
+$('loadScenarioBtn').addEventListener('click', () => $('loadScenarioInput').click());
+$('loadScenarioInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) loadScenarioFile(file);
+  e.target.value = '';
+});
+
+// ====== EXAMPLE SCENARIOS (biblioteca de fábrica, embutida) ======
+// Unidades em kg / kg/min para leitura didática direta. Calibrados para
+// produzir, respectivamente: sucesso limpo / pausas+reentrada / deadlock.
+const U = { massUnit: 'kg', flowUnit: 'kg/min' };
+const EXAMPLE_SCENARIOS = {
+  nominal: {
+    version: SCENARIO_VERSION, mode: 'uniform',
+    tanker: { ...U, density: 0.804, flowX: 700, flowY: 600, wingMax: 8000, wingPause: 500, wingResume: 2000, tankerBurn: 30, podInitial: 20000, wingInitial: 6000 },
+    receivers: {
+      nAircraft: 3, bingoFuel: 800, bingoUnit: 'kg',
+      tolerance: { enabled: false, mode: 'delta', uniformValue: 0 },
+      uniform: { initial: 2000, target: 5000, consumption: 20, consumptionContact: 15, ...U },
+      perAircraft: []
+    },
+    simulation: { dt: 0.5, maxTime: 120, queuePolicy: 'arrival', suggestFolga: 15 }
+  },
+  limite: {
+    version: SCENARIO_VERSION, mode: 'uniform',
+    tanker: { ...U, density: 0.804, flowX: 300, flowY: 1100, wingMax: 8000, wingPause: 800, wingResume: 2500, tankerBurn: 50, podInitial: 24000, wingInitial: 3000 },
+    receivers: {
+      nAircraft: 4, bingoFuel: 500, bingoUnit: 'kg',
+      tolerance: { enabled: true, mode: 'delta', uniformValue: 300 },
+      uniform: { initial: 2200, target: 5200, consumption: 30, consumptionContact: 22, ...U },
+      perAircraft: []
+    },
+    simulation: { dt: 0.5, maxTime: 180, queuePolicy: 'lowest', suggestFolga: 25 }
+  },
+  falha: {
+    // Gargalo de fluxo: X (pod->asa) ~15x menor que Y (asa->recebedor). O pod
+    // tem combustível de sobra, mas a asa só recarrega lentamente; cada pausa
+    // dura ~21 min e as recebedoras em espera esgotam (bingo) esperando a vez.
+    version: SCENARIO_VERSION, mode: 'uniform',
+    tanker: { ...U, density: 0.804, flowX: 80, flowY: 1200, wingMax: 8000, wingPause: 800, wingResume: 2500, tankerBurn: 60, podInitial: 30000, wingInitial: 3000 },
+    receivers: {
+      nAircraft: 4, bingoFuel: 600, bingoUnit: 'kg',
+      tolerance: { enabled: false, mode: 'delta', uniformValue: 0 },
+      uniform: { initial: 2200, target: 5000, consumption: 40, consumptionContact: 25, ...U },
+      perAircraft: []
+    },
+    simulation: { dt: 0.5, maxTime: 240, queuePolicy: 'arrival', suggestFolga: 15 }
+  }
+};
+const EXAMPLE_LABELS = {
+  nominal: 'Nominal (sucesso tranquilo)',
+  limite: 'No limite (pausas + reentrada)',
+  falha: 'Falha (gargalo de fluxo X≪Y)'
+};
+function loadExampleScenario(key) {
+  const data = EXAMPLE_SCENARIOS[key];
+  if (!data) return;
+  // clona para não mutar a biblioteca ao aplicar/serializar
+  if (applyScenario(JSON.parse(JSON.stringify(data)))) {
+    $('scenarioStatus').textContent = `Cenário de exemplo carregado: ${EXAMPLE_LABELS[key]}.`;
+    runSim();
+  }
+}
+$('exampleScenario').addEventListener('change', e => {
+  const key = e.target.value;
+  if (key) loadExampleScenario(key);
+  e.target.value = ''; // permite recarregar o mesmo exemplo
+});
+
+// ====== Painéis/seções expansíveis e retráteis ======
+document.querySelectorAll('.collapsible > .collapse-header').forEach(h => {
+  h.addEventListener('click', () => h.parentElement.classList.toggle('collapsed'));
+});
+
+// ====== Abas (Introdução / Simulador) ======
+function activateTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+}
+document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => activateTab(b.dataset.tab)));
+$('introGoSim').addEventListener('click', () => activateTab('sim'));
+
+// ====== SUGGESTION (combustível da reabastecedora) ======
+// Reads receiver data (canonical kg) and tanker flows, computes a suggestion
+// in canonical kg, then writes it back to the tanker inputs in tanker's display unit.
+function readReceiversCanonical() {
+  const n = Math.max(1, Math.min(20, parseInt($('nAircraft').value) || 1));
+  const list = [];
+  if (mode === 'uniform') {
+    const massU = $('uniformMassUnit').value;
+    const flowU = $('uniformFlowUnit').value;
+    const init = toKg(+$('uniformInitial').value, massU);
+    const target = toKg(+$('uniformTarget').value, massU);
+    const cons = toKgMin(+$('uniformConsumption').value, flowU);
+    const consContact = toKgMin(+$('uniformConsumptionContact').value, flowU);
+    for (let i = 0; i < n; i++) list.push({ initial: init, target, consumption: cons, consumptionContact: consContact });
+  } else {
+    const rows = $('perAircraftList').querySelectorAll('.per-aircraft-row');
+    rows.forEach(r => {
+      const inputs = r.querySelectorAll('input');
+      const selects = r.querySelectorAll('select');
+      const massU = selects[0].value;
+      const flowU = selects[1].value;
+      list.push({
+        initial: toKg(+inputs[0].value, massU),
+        target: toKg(+inputs[1].value, massU),
+        consumption: toKgMin(+inputs[2].value, flowU),
+        consumptionContact: toKgMin(+inputs[3].value, flowU)
+      });
+    });
+    while (list.length < n) {
+      const massU = $('uniformMassUnit').value;
+      const flowU = $('uniformFlowUnit').value;
+      list.push({
+        initial: toKg(+$('uniformInitial').value, massU),
+        target: toKg(+$('uniformTarget').value, massU),
+        consumption: toKgMin(+$('uniformConsumption').value, flowU),
+        consumptionContact: toKgMin(+$('uniformConsumptionContact').value, flowU)
+      });
+    }
+  }
+  return list;
+}
+
+function suggestTankerFuel() {
+  const detailEl = $('suggestDetail');
+  detailEl.style.display = 'block';
+  detailEl.classList.remove('warn');
+
+  const tMass = $('tankerMassUnit').value;
+  const tFlow = $('tankerFlowUnit').value;
+  const Y = toKgMin(+$('flowY').value, tFlow);
+  const wingMax = toKg(+$('wingMax').value, tMass);
+  const wingResume = toKg(+$('wingResume').value, tMass);
+  if (!(Y > 0)) {
+    detailEl.innerHTML = '<span class="warn">⚠ Fluxo Y deve ser &gt; 0 para calcular a sugestão.</span>';
+    return;
+  }
+  const receivers = readReceiversCanonical();
+  let totalGross = 0;
+  let totalTime = 0;
+  const warnings = [];
+  receivers.forEach((ac, i) => {
+    const net = Math.max(0, ac.target - ac.initial);
+    const effective = Y - ac.consumptionContact;
+    if (effective <= 0) {
+      warnings.push(`A${i+1}: consumo em contato (${ac.consumptionContact.toFixed(0)} kg/min) ≥ Y — aeronave nunca enche.`);
+      return;
+    }
+    const tc = net / effective;
+    const gross = net + ac.consumptionContact * tc; // bruto que sai da reabastecedora para esta aeronave
+    totalGross += gross;
+    totalTime += tc;
+  });
+
+  const folgaPct = Math.max(0, +$('suggestFolga').value || 0) / 100;
+  const wingSug = Math.max(wingResume, 0.6 * wingMax);
+  const totalWithMargin = totalGross * (1 + folgaPct);
+  const podSug = Math.max(0, totalWithMargin - wingSug);
+
+  // Convert back to tanker display unit
+  const podDisp = fromKg(podSug, tMass);
+  const wingDisp = fromKg(wingSug, tMass);
+  // Apply to inputs (rounded to nearest 10 for readability)
+  $('podInitial').value = Math.round(podDisp / 10) * 10;
+  $('wingInitial').value = Math.round(wingDisp / 10) * 10;
+
+  const fmt = v => fromKg(v, tMass).toFixed(0);
+  let html = '';
+  html += `Demanda bruta total: ${fmt(totalGross)} ${tMass}\n`;
+  html += `Tempo estimado da operação: ${totalTime.toFixed(1)} min\n`;
+  html += `Folga aplicada: ${(folgaPct*100).toFixed(0)}% (${fmt(totalGross * folgaPct)} ${tMass})\n`;
+  html += `Asa sugerida: ${fmt(wingSug)} ${tMass}  (max[ margem retomada, 60% capacidade asa ])\n`;
+  html += `Pod sugerido: ${fmt(podSug)} ${tMass}  (total com folga − asa)`;
+  if (warnings.length) html += '\n\n<span class="warn">' + warnings.join('\n') + '</span>';
+  detailEl.innerHTML = html;
+}
+$('suggestBtn').addEventListener('click', suggestTankerFuel);
+
+// ====== READ INPUTS (returns canonical params) ======
+function readParams() {
+  const tMass = $('tankerMassUnit').value;
+  const tFlow = $('tankerFlowUnit').value;
+
+  const podInitial = toKg(+$('podInitial').value, tMass);
+  const wingInitial = toKg(+$('wingInitial').value, tMass);
+  const wingMax = toKg(+$('wingMax').value, tMass);
+  const flowX = toKgMin(+$('flowX').value, tFlow);
+  const flowY = toKgMin(+$('flowY').value, tFlow);
+  const wingPause = toKg(+$('wingPause').value, tMass);
+  const wingResume = toKg(+$('wingResume').value, tMass);
+  const tankerBurn = toKgMin(+$('tankerBurn').value, tFlow);
+  const bingoFuel = toKg(+$('bingoFuel').value, $('bingoUnit').value);
+
+  const toleranceEnabled = $('toleranceEnabled').checked;
+  const toleranceMode = $('toleranceMode').value; // 'delta' | 'absolute'
+
+  const n = Math.max(1, Math.min(20, parseInt($('nAircraft').value) || 1));
+  const aircraft = [];
+  if (mode === 'uniform') {
+    const massU = $('uniformMassUnit').value;
+    const flowU = $('uniformFlowUnit').value;
+    const init = toKg(+$('uniformInitial').value, massU);
+    const target = toKg(+$('uniformTarget').value, massU);
+    const cons = toKgMin(+$('uniformConsumption').value, flowU);
+    const consContact = toKgMin(+$('uniformConsumptionContact').value, flowU);
+    const tol = toKg(+$('uniformTolerance').value, massU);
+    for (let i = 0; i < n; i++) aircraft.push({ initial: init, target, consumption: cons, consumptionContact: consContact, toleranceValue: tol });
+  } else {
+    const rows = $('perAircraftList').querySelectorAll('.per-aircraft-row');
+    rows.forEach(r => {
+      const inputs = r.querySelectorAll('input');
+      const selects = r.querySelectorAll('select');
+      const massU = selects[0].value;
+      const flowU = selects[1].value;
+      aircraft.push({
+        initial: toKg(+inputs[0].value, massU),
+        target: toKg(+inputs[1].value, massU),
+        consumption: toKgMin(+inputs[2].value, flowU),
+        consumptionContact: toKgMin(+inputs[3].value, flowU),
+        toleranceValue: toKg(+(inputs[4] ? inputs[4].value : $('uniformTolerance').value), massU)
+      });
+    });
+    while (aircraft.length < n) {
+      const flowU = $('uniformFlowUnit').value;
+      const massU = $('uniformMassUnit').value;
+      aircraft.push({
+        initial: toKg(+$('uniformInitial').value, massU),
+        target: toKg(+$('uniformTarget').value, massU),
+        consumption: toKgMin(+$('uniformConsumption').value, flowU),
+        consumptionContact: toKgMin(+$('uniformConsumptionContact').value, flowU),
+        toleranceValue: toKg(+$('uniformTolerance').value, massU)
+      });
+    }
+  }
+  return {
+    podInitial, wingInitial, wingMax, flowX, flowY,
+    wingPause, wingResume, bingoFuel, tankerBurn,
+    aircraft,
+    toleranceEnabled, toleranceMode,
+    queuePolicy: $('queuePolicy').value,
+    dt: +$('dt').value,
+    maxTime: +$('maxTime').value
+  };
+}
+
+// ====== RENDER ======
+function renderChart(p, result) {
+  const ctx = $('fuelChart').getContext('2d');
+  if (fuelChart) fuelChart.destroy();
+  const displayU = $('displayUnit').value;
+  const conv = v => fromKg(v, displayU);
+
+  const datasets = [
+    { label: 'Pod (eixo dir.)', data: result.hist.pod.map(conv), borderColor: '#ffb13b', backgroundColor: 'rgba(255,177,59,0.08)', borderWidth: 2.5, fill: false, tension: 0.1, pointRadius: 0, yAxisID: 'y1' },
+    { label: 'Asa (reabast.)', data: result.hist.wing.map(conv), borderColor: '#4ddbff', backgroundColor: 'rgba(77,219,255,0.10)', borderWidth: 2.5, fill: true, tension: 0.1, pointRadius: 0, yAxisID: 'y' },
+  ];
+  for (let i = 0; i < p.aircraft.length; i++) {
+    datasets.push({
+      label: `A${i+1}`, data: result.hist.fuel[i].map(conv),
+      borderColor: colors[i % colors.length], borderWidth: 1.6, borderDash: [4, 3], fill: false, tension: 0.1, pointRadius: 0
+    });
+  }
+  const tArr = result.hist.t;
+  datasets.push({ label: `Limiar pausa (${fromKg(p.wingPause, displayU).toFixed(0)} ${displayU})`, data: tArr.map(() => conv(p.wingPause)), borderColor: 'rgba(255,90,90,0.6)', borderWidth: 1, borderDash: [2, 4], fill: false, pointRadius: 0 });
+  datasets.push({ label: `Margem retomada (${fromKg(p.wingResume, displayU).toFixed(0)} ${displayU})`, data: tArr.map(() => conv(p.wingResume)), borderColor: 'rgba(255,177,59,0.5)', borderWidth: 1, borderDash: [2, 4], fill: false, pointRadius: 0 });
+  datasets.push({ label: `Bingo fuel (${fromKg(p.bingoFuel, displayU).toFixed(0)} ${displayU})`, data: tArr.map(() => conv(p.bingoFuel)), borderColor: 'rgba(215,123,255,0.5)', borderWidth: 1, borderDash: [1, 3], fill: false, pointRadius: 0 });
+
+  fuelChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: tArr, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#e8eaed', font: { family: 'IBM Plex Mono', size: 10 }, boxWidth: 14, boxHeight: 2 }, position: 'bottom' },
+        tooltip: {
+          backgroundColor: '#1a2230', borderColor: '#2a3445', borderWidth: 1,
+          titleFont: { family: 'IBM Plex Mono', size: 11 }, bodyFont: { family: 'IBM Plex Mono', size: 11 },
+          callbacks: { title: items => `t = ${items[0].label} min`, label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} ${displayU}` }
+        }
+      },
+      scales: {
+        x: { title: { display: true, text: 'Tempo (min)', color: '#8b95a7', font: { family: 'IBM Plex Mono', size: 11 } }, ticks: { color: '#8b95a7', font: { family: 'IBM Plex Mono', size: 10 }, maxTicksLimit: 12 }, grid: { color: 'rgba(42,52,69,0.5)' } },
+        y: { position: 'left', title: { display: true, text: `Asa & reabastecidas (${displayU})`, color: '#4ddbff', font: { family: 'IBM Plex Mono', size: 11 } }, ticks: { color: '#8b95a7', font: { family: 'IBM Plex Mono', size: 10 } }, grid: { color: 'rgba(42,52,69,0.5)' }, beginAtZero: true },
+        y1: { position: 'right', title: { display: true, text: `Pod (${displayU})`, color: '#ffb13b', font: { family: 'IBM Plex Mono', size: 11 } }, ticks: { color: '#ffb13b', font: { family: 'IBM Plex Mono', size: 10 } }, grid: { drawOnChartArea: false }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+function renderEvents(events) {
+  const tbody = $('eventTbody');
+  if (!events.length) {
+    tbody.innerHTML = '<tr><td colspan="3" style="color:var(--text-dim);text-align:center;padding:20px">Nenhum evento registrado.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = events.map(e => `
+    <tr>
+      <td style="color:var(--text-dim)">${e.time.toFixed(2)}</td>
+      <td><span class="badge ${e.type}">${e.type}</span></td>
+      <td>${e.text}</td>
+    </tr>
+  `).join('');
+}
+
+function renderMetrics(result) {
+  $('metricTime').innerHTML = result.finalT.toFixed(1) + '<span class="unit">min</span>';
+  $('metricPauses').innerHTML = result.pauses;
+  $('metricDone').innerHTML = `${result.doneCount}<span class="unit">/${result.totalAircraft}</span>`;
+  $('metricPauseTime').innerHTML = result.pauseTime.toFixed(1) + '<span class="unit">min</span>';
+  $('metricReconnects').innerHTML = result.reconnects || 0;
+  const wa = $('warningArea');
+  wa.innerHTML = '';
+  if (result.deadlock) {
+    wa.innerHTML = '<div class="warning">⚠ DEADLOCK: pod esgotado e asa abaixo da margem de retomada. Não foi possível concluir todas as reabastecidas.</div>';
+  } else if (result.bingoFail) {
+    wa.innerHTML = '<div class="warning">⚠ BINGO FUEL: uma aeronave em espera atingiu o combustível mínimo antes de ser atendida.</div>';
+  } else if (!result.allDone) {
+    wa.innerHTML = '<div class="warning">⚠ Tempo máximo atingido sem concluir todas as reabastecidas. Aumente o tempo máximo da simulação.</div>';
+  }
+  $('statusBadge').textContent = result.allDone ? `✓ Concluído em ${result.finalT.toFixed(1)} min` : (result.deadlock ? '✗ Deadlock' : result.bingoFail ? '✗ Bingo fuel' : '⏱ Truncado');
+  $('statusBadge').style.color = result.allDone ? 'var(--green)' : 'var(--red)';
+}
+
+function minBingoMargin(p, result) {
+  let margin = Infinity;
+  for (let k = 0; k < result.hist.t.length; k++) {
+    const currentIdx = result.hist.currentIdx[k];
+    const statuses = result.hist.statuses[k] || [];
+    for (let i = 0; i < p.aircraft.length; i++) {
+      const receiving = i === currentIdx && statuses[i] === 'refueling';
+      if (!receiving) margin = Math.min(margin, result.hist.fuel[i][k] - p.bingoFuel);
+    }
+  }
+  return Number.isFinite(margin) ? margin : 0;
+}
+
+function renderOperationalStudy(p, result) {
+  const findings = $('studyFindings');
+  const ontology = $('ontologyMap');
+  if (!findings || !ontology) return;
+
+  const flowRatio = p.flowY / Math.max(p.flowX, 1e-9);
+  const netTransfer = p.flowY - (p.aircraft.reduce((sum, ac) => sum + ac.consumptionContact, 0) / Math.max(p.aircraft.length, 1));
+  const minMargin = minBingoMargin(p, result);
+  const avgWaitBurn = p.aircraft.reduce((sum, ac) => sum + ac.consumption, 0) / Math.max(p.aircraft.length, 1);
+  const totalDemand = p.aircraft.reduce((sum, ac) => sum + Math.max(0, ac.target - ac.initial), 0);
+  const wingBand = Math.max(0, p.wingResume - p.wingPause);
+  const reserveAfter = (result.hist.pod.at(-1) || 0) + (result.hist.wing.at(-1) || 0);
+
+  const items = [];
+  items.push({
+    cls: result.allDone ? '' : 'danger',
+    text: result.allDone
+      ? `A operação fecha em ${result.finalT.toFixed(1)} min para ${p.aircraft.length} aeronave(s).`
+      : `A operação não fecha: limitante atual = ${result.failReason || 'tempo'}.`
+  });
+  items.push({
+    cls: flowRatio > 1.15 ? 'warn' : '',
+    text: flowRatio > 1
+      ? `Y é ${flowRatio.toFixed(2)}× maior que X: a asa tende a esvaziar durante contato e depende da banda de histerese para recuperar.`
+      : `X cobre Y no regime médio: pausas por asa só devem aparecer se houver consumo da reabastecedora, baixa asa inicial ou limite de capacidade.`
+  });
+  items.push({
+    cls: minMargin < 0 ? 'danger' : (minMargin < avgWaitBurn * 5 ? 'warn' : ''),
+    text: `Menor margem observada ao bingo: ${minMargin.toFixed(0)} kg; consumo médio em espera: ${avgWaitBurn.toFixed(1)} kg/min.`
+  });
+  items.push({
+    cls: result.pauses ? 'warn' : '',
+    text: `Ciclos de pausa: ${result.pauses}; tempo pausado acumulado: ${result.pauseTime.toFixed(1)} min; banda asa retomada-pausa: ${wingBand.toFixed(0)} kg.`
+  });
+  items.push({
+    cls: reserveAfter < totalDemand * 0.08 ? 'warn' : '',
+    text: `Demanda líquida inicial da frota: ${totalDemand.toFixed(0)} kg; reserva remanescente pod+asa no fim: ${reserveAfter.toFixed(0)} kg.`
+  });
+  if (p.toleranceEnabled) {
+    items.push({
+      cls: result.reconnects ? 'warn' : '',
+      text: `Tolerância pós-alvo ativa: ${result.reconnects || 0} reconexão(ões), modelando aeronaves concluídas que continuam consumindo em espera.`
+    });
+  }
+  findings.innerHTML = items.map(item => `<div class="study-item ${item.cls}">${item.text}</div>`).join('');
+
+  ontology.innerHTML = [
+    ['Reabastecedora', 'contém', `Pod (${p.podInitial.toFixed(0)} kg) + Asa (${p.wingInitial.toFixed(0)} kg)`],
+    ['Fluxo X', 'realimenta', `Asa a ${p.flowX.toFixed(0)} kg/min`],
+    ['Fluxo Y', 'transfere', `Aeronave em contato a ${p.flowY.toFixed(0)} kg/min`],
+    ['Histerese', 'pausa/retoma', `${p.wingPause.toFixed(0)} → ${p.wingResume.toFixed(0)} kg`],
+    ['Fila', 'queima', `${avgWaitBurn.toFixed(1)} kg/min por aeronave média`],
+    ['Bingo fuel', 'limita', `${p.bingoFuel.toFixed(0)} kg mínimos operacionais`],
+    ['Política', 'ordena', p.queuePolicy === 'lowest' ? 'menor combustível primeiro' : 'ordem de chegada']
+  ].map(([a, edge, b], i) => `
+    <div class="ontology-row">
+      <div class="ontology-node alt">${a}</div>
+      <div class="ontology-edge">${edge}</div>
+      <div class="ontology-node">${b}</div>
+    </div>
+  `).join('');
+}
+
+// ====== RUN SIMULATION ======
+let lastResult = null;
+let lastParams = null;
+function runSim() {
+  const p = readParams();
+  if (p.wingResume <= p.wingPause) { alert('Margem de retomada deve ser maior que limiar de pausa.'); return; }
+  if (p.wingResume > p.wingMax) { alert('Margem de retomada não pode exceder capacidade máx. da asa.'); return; }
+  if (p.dt <= 0) { alert('dt deve ser > 0.'); return; }
+  const _eh = $('emptyHint'); if (_eh) _eh.style.display = 'none';
+  const result = simulate(p);
+  lastResult = result;
+  lastParams = p;
+  renderChart(p, result);
+  renderEvents(result.events);
+  renderMetrics(result);
+  renderOperationalStudy(p, result);
+  // Reset viz to start
+  vizTime = 0;
+  vizPlaying = false;
+  $('vizPlayBtn').textContent = '▶ Play';
+  $('vizScrubber').value = 0;
+  $('vizTime').textContent = 't = 0.0 min';
+  drawViz();
+  // Persist last successful scenario locally
+  saveScenarioLocal();
+}
+$('runBtn').addEventListener('click', runSim);
+$('displayUnit').addEventListener('change', runSim);
+$('density').addEventListener('change', runSim);
+
+// ====== VISUALIZATION ======
+let vizPlaying = false;
+let vizTime = 0;
+let vizSpeed = 5;
+let vizLastFrame = 0;
+
+function aircraftColor(idx, n) {
+  if (mode === 'uniform') return '#4ddbff';
+  // Distribute hue around cyan in per-aircraft mode
+  const baseHue = 185;
+  const spread = 140;
+  const hue = baseHue + (idx / Math.max(n - 1, 1) - 0.5) * spread;
+  return `hsl(${hue}, 75%, 65%)`;
+}
+
+function drawTriangle(ctx, cx, cy, size, color, opacity) {
+  ctx.save();
+  ctx.globalAlpha = opacity || 1;
+  ctx.fillStyle = color;
+  ctx.strokeStyle = 'rgba(10,14,20,0.8)';
+  ctx.lineWidth = 1.2;
+  // Triangle pointing right (like an aircraft viewed from above)
+  ctx.beginPath();
+  ctx.moveTo(cx + size, cy);
+  ctx.lineTo(cx - size * 0.7, cy - size * 0.65);
+  ctx.lineTo(cx - size * 0.35, cy);
+  ctx.lineTo(cx - size * 0.7, cy + size * 0.65);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+function project3D(point, W, H) {
+  const cam = { x: 0, y: -440, z: 165 };
+  const focal = Math.min(W, H) * 1.22;
+  const depth = Math.max(80, point.y - cam.y);
+  const scale = focal / (focal + depth);
+  return {
+    x: W * 0.5 + (point.x - cam.x) * scale,
+    y: H * 0.48 - (point.z - cam.z) * scale + point.y * 0.105 * scale,
+    scale,
+    depth
+  };
+}
+
+function hexToRgb(hex) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : { r: 85, g: 199, b: 232 };
+}
+
+function shade(hex, amount) {
+  const c = hexToRgb(hex);
+  const mix = amount > 0 ? 255 : 0;
+  const t = Math.abs(amount);
+  return `rgb(${Math.round(c.r + (mix - c.r) * t)}, ${Math.round(c.g + (mix - c.g) * t)}, ${Math.round(c.b + (mix - c.b) * t)})`;
+}
+
+function drawSimBackdrop(ctx, W, H, time) {
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#111a26');
+  sky.addColorStop(0.48, '#0d141f');
+  sky.addColorStop(0.49, '#0b1017');
+  sky.addColorStop(1, '#06080d');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, H);
+
+  const horizon = H * 0.48;
+  ctx.strokeStyle = 'rgba(85,199,232,0.16)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, horizon);
+  ctx.lineTo(W, horizon);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.035)';
+  ctx.font = "10px 'IBM Plex Mono', monospace";
+  ctx.textAlign = 'right';
+  ctx.fillText('AAR SIM ENGINE', W - 14, horizon - 10);
+
+  const sweep = (time * 24) % W;
+  const scan = ctx.createLinearGradient(sweep - 160, 0, sweep, 0);
+  scan.addColorStop(0, 'rgba(85,199,232,0)');
+  scan.addColorStop(1, 'rgba(85,199,232,0.07)');
+  ctx.fillStyle = scan;
+  ctx.fillRect(Math.max(0, sweep - 160), 0, 160, H);
+}
+
+function drawGroundGrid(ctx, W, H, time) {
+  ctx.save();
+  ctx.lineWidth = 1;
+  for (let y = -220; y <= 680; y += 62) {
+    const a = project3D({ x: -620, y: y + (time * 10) % 62, z: -52 }, W, H);
+    const b = project3D({ x: 620, y: y + (time * 10) % 62, z: -52 }, W, H);
+    ctx.strokeStyle = `rgba(85,199,232,${0.045 + a.scale * 0.1})`;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+  for (let x = -560; x <= 560; x += 70) {
+    const a = project3D({ x, y: -220, z: -52 }, W, H);
+    const b = project3D({ x, y: 700, z: -52 }, W, H);
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+  const centerA = project3D({ x: 0, y: -200, z: -51 }, W, H);
+  const centerB = project3D({ x: 0, y: 700, z: -51 }, W, H);
+  ctx.strokeStyle = 'rgba(242,184,75,0.2)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(centerA.x, centerA.y);
+  ctx.lineTo(centerB.x, centerB.y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawAircraft3D(ctx, W, H, pos, size, color, label, opts = {}) {
+  const p = project3D(pos, W, H);
+  const s = size * p.scale;
+  ctx.save();
+  ctx.globalAlpha = opts.opacity ?? 1;
+
+  ctx.fillStyle = `rgba(0,0,0,${0.16 + Math.min(0.22, p.scale * 0.18)})`;
+  ctx.beginPath();
+  ctx.ellipse(p.x, p.y + s * 1.22, s * 1.7, s * 0.34, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.translate(p.x, p.y);
+  ctx.rotate(opts.roll || 0);
+  ctx.strokeStyle = 'rgba(237,241,245,0.36)';
+  ctx.lineWidth = Math.max(1, 1.2 * p.scale);
+
+  // Fuselage and faceted wings: deliberately low-poly, like a lightweight sim asset.
+  ctx.fillStyle = shade(color, -0.08);
+  ctx.beginPath();
+  ctx.moveTo(s * 1.42, 0);
+  ctx.lineTo(s * 0.42, -s * 0.2);
+  ctx.lineTo(-s * 0.78, -s * 0.15);
+  ctx.lineTo(-s * 1.12, 0);
+  ctx.lineTo(-s * 0.78, s * 0.15);
+  ctx.lineTo(s * 0.42, s * 0.2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = shade(color, 0.16);
+  ctx.beginPath();
+  ctx.moveTo(s * 0.28, -s * 0.15);
+  ctx.lineTo(-s * 0.68, -s * 1.02);
+  ctx.lineTo(-s * 0.22, -s * 0.2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(s * 0.28, s * 0.15);
+  ctx.lineTo(-s * 0.68, s * 1.02);
+  ctx.lineTo(-s * 0.22, s * 0.2);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = shade(color, -0.18);
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.78, -s * 0.14);
+  ctx.lineTo(-s * 1.28, -s * 0.58);
+  ctx.lineTo(-s * 1.04, -s * 0.04);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.78, s * 0.14);
+  ctx.lineTo(-s * 1.28, s * 0.58);
+  ctx.lineTo(-s * 1.04, s * 0.04);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.46)';
+  ctx.beginPath();
+  ctx.roundRect(s * 0.16, -s * 0.08, s * 0.36, s * 0.16, Math.max(2, s * 0.04));
+  ctx.fill();
+  ctx.restore();
+
+  if (label) {
+    ctx.save();
+    ctx.fillStyle = opts.labelColor || '#e8eaed';
+    ctx.font = `bold ${Math.max(8, 12 * p.scale)}px 'IBM Plex Mono', monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(label, p.x, p.y + s * 2.08);
+    ctx.restore();
+  }
+  return p;
+}
+
+function draw3DLine(ctx, W, H, a, b, color, width = 2, dashed = false) {
+  const pa = project3D(a, W, H);
+  const pb = project3D(b, W, H);
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width * Math.max(pa.scale, pb.scale);
+  if (dashed) ctx.setLineDash([7, 5]);
+  ctx.beginPath();
+  ctx.moveTo(pa.x, pa.y);
+  ctx.lineTo(pb.x, pb.y);
+  ctx.stroke();
+  ctx.restore();
+  return { pa, pb };
+}
+
+function findStepIndex(t) {
+  if (!lastResult) return 0;
+  const arr = lastResult.hist.t;
+  let lo = 0, hi = arr.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (arr[mid] < t) lo = mid + 1;
+    else hi = mid;
+  }
+  return Math.max(0, Math.min(arr.length - 1, lo));
+}
+
+function drawViz() {
+  const canvas = $('vizCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.getBoundingClientRect();
+  if (!Number.isFinite(rect.width) || !Number.isFinite(rect.height) || rect.width <= 0 || rect.height <= 0) return;
+  const dpr = window.devicePixelRatio || 1;
+  if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+  }
+  const W = rect.width, H = rect.height;
+
+  drawSimBackdrop(ctx, W, H, vizTime);
+  drawGroundGrid(ctx, W, H, vizTime);
+
+  if (!lastResult || !lastParams) {
+    ctx.fillStyle = '#8b95a7';
+    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'center';
+    ctx.fillText('Execute a simulação para visualizar a ciranda em 3D', W/2, H/2);
+    return;
+  }
+
+  const idx = findStepIndex(vizTime);
+  const currentIdx = lastResult.hist.currentIdx[idx];
+  const statuses = lastResult.hist.statuses[idx] || [];
+  const n = statuses.length;
+  const visitsArr = (lastResult.hist.visits && lastResult.hist.visits[idx]) || lastParams.aircraft.map(() => 0);
+  const wing = lastResult.hist.wing[idx] || 0;
+  const wingPct = Math.max(0, Math.min(1, wing / Math.max(lastParams.wingMax, 1)));
+  const tankerPos = {
+    x: Math.sin(vizTime * 0.05) * 12,
+    y: 32 + Math.sin(vizTime * 0.025) * 18,
+    z: 48 + Math.sin(vizTime * 0.06) * 4
+  };
+
+  // Orbit rails for waiting and completed aircraft.
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  for (let r = 0; r < 2; r++) {
+    let prev = null;
+    for (let a = 0; a <= Math.PI * 2 + 0.01; a += 0.18) {
+      const point = project3D({ x: Math.cos(a) * (250 + r * 70), y: 230 + Math.sin(a) * 98, z: -18 }, W, H);
+      if (prev) {
+        ctx.beginPath();
+        ctx.moveTo(prev.x, prev.y);
+        ctx.lineTo(point.x, point.y);
+        ctx.stroke();
+      }
+      prev = point;
+    }
+  }
+  ctx.restore();
+
+  // Draw non-current aircraft back-to-front by projected depth.
+  const aircraftDraw = [];
+  for (let i = 0; i < n; i++) {
+    if (i === currentIdx && statuses[i] === 'refueling') continue;
+    if (statuses[i] === 'waiting') {
+      const order = i + vizTime * 0.035;
+      const angle = order * 0.82;
+      const radius = 280 + (i % 2) * 58;
+      aircraftDraw.push({
+        idx: i,
+        pos: {
+          x: Math.cos(angle) * radius + 150,
+          y: 250 + Math.sin(angle) * 106,
+          z: 2 + Math.sin(angle * 1.7) * 12
+        },
+        size: 31,
+        opacity: visitsArr[i] >= 1 ? 1 : 0.78,
+        labelColor: visitsArr[i] >= 1 ? '#ffe05e' : '#bcc4d2',
+        suffix: visitsArr[i] >= 1 ? '↻' : ''
+      });
+    } else if (statuses[i] === 'done') {
+      aircraftDraw.push({
+        idx: i,
+        pos: { x: -285 - (i % 6) * 42, y: 260 + Math.floor(i / 6) * 48, z: -12 },
+        size: 25,
+        opacity: 0.34,
+        labelColor: 'rgba(94,224,127,0.82)',
+        suffix: '✓'
+      });
+    }
+  }
+  aircraftDraw
+    .sort((a, b) => project3D(b.pos, W, H).depth - project3D(a.pos, W, H).depth)
+    .forEach(item => {
+      drawAircraft3D(ctx, W, H, item.pos, item.size, aircraftColor(item.idx, n), `A${item.idx + 1}${item.suffix}`, {
+        opacity: item.opacity,
+        labelColor: item.labelColor,
+        roll: Math.sin(vizTime * 0.04 + item.idx) * 0.06
+      });
+      const f = lastResult.hist.fuel[item.idx][idx];
+      const tgt = lastParams.aircraft[item.idx].target;
+      const pct = Math.min(1, Math.max(0, f / Math.max(tgt, 1)));
+      const p2 = project3D(item.pos, W, H);
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fillRect(p2.x - 15 * p2.scale, p2.y + 27 * p2.scale, 30 * p2.scale, 3 * p2.scale);
+      ctx.fillStyle = pct < 0.25 ? '#ff5a5a' : (item.suffix === '↻' ? '#ffe05e' : '#5ee07f');
+      ctx.fillRect(p2.x - 15 * p2.scale, p2.y + 27 * p2.scale, 30 * p2.scale * pct, 3 * p2.scale);
+    });
+
+  let currentPos = null;
+  if (currentIdx !== null && currentIdx !== undefined && statuses[currentIdx] === 'refueling') {
+    currentPos = { x: -132, y: 96, z: 18 + Math.sin(vizTime * 0.12) * 2 };
+    const isPausedAtFrame = wing <= lastParams.wingPause + 1e-6;
+    const line = draw3DLine(ctx, W, H, { ...tankerPos, x: tankerPos.x - 36, z: tankerPos.z - 4 }, { ...currentPos, x: currentPos.x + 34 }, isPausedAtFrame ? 'rgba(255,107,107,0.72)' : 'rgba(105,210,137,0.95)', 3.4, isPausedAtFrame);
+    if (!isPausedAtFrame) {
+      const pulse = (Math.sin(vizTime * 4) + 1) * 0.5;
+      ctx.fillStyle = `rgba(105,210,137,${0.42 + pulse * 0.5})`;
+      ctx.beginPath();
+      ctx.arc(line.pa.x + (line.pb.x - line.pa.x) * pulse, line.pa.y + (line.pb.y - line.pa.y) * pulse, 4 + pulse * 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    drawAircraft3D(ctx, W, H, currentPos, 34, aircraftColor(currentIdx, n), `A${currentIdx + 1}${visitsArr[currentIdx] > 1 ? '↻' : ''}`, {
+      labelColor: '#e8eaed',
+      roll: -0.04
+    });
+  }
+
+  drawAircraft3D(ctx, W, H, tankerPos, 58, '#f2b84b', 'TANKER', { labelColor: '#f2b84b' });
+
+  // Wing reservoir ring around tanker.
+  const tankerScreen = project3D(tankerPos, W, H);
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+  ctx.lineWidth = 6 * tankerScreen.scale;
+  ctx.beginPath();
+  ctx.arc(tankerScreen.x, tankerScreen.y - 42 * tankerScreen.scale, 34 * tankerScreen.scale, -Math.PI / 2, Math.PI * 1.5);
+  ctx.stroke();
+  ctx.strokeStyle = wingPct <= 0.22 ? '#ff6b6b' : '#55c7e8';
+  ctx.beginPath();
+  ctx.arc(tankerScreen.x, tankerScreen.y - 42 * tankerScreen.scale, 34 * tankerScreen.scale, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * wingPct);
+  ctx.stroke();
+  ctx.restore();
+
+  // Compact cockpit HUD.
+  ctx.save();
+  ctx.fillStyle = 'rgba(8,11,16,0.56)';
+  ctx.strokeStyle = 'rgba(154,170,190,0.18)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(12, 12, 188, lastParams.toleranceEnabled ? 82 : 66, 8);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#9aa8b8';
+  ctx.font = "10px 'IBM Plex Mono', monospace";
+  ctx.textAlign = 'left';
+  ctx.fillText(`T+ ${vizTime.toFixed(1)} min`, 24, 31);
+  ctx.fillText(`POD ${lastResult.hist.pod[idx].toFixed(0)} kg`, 24, 47);
+  ctx.fillStyle = '#55c7e8';
+  ctx.fillText(`ASA ${lastResult.hist.wing[idx].toFixed(0)} kg`, 24, 63);
+  ctx.fillStyle = '#edf1f5';
+  ctx.fillText(`X/Y ${lastParams.flowX.toFixed(0)} / ${lastParams.flowY.toFixed(0)} kg/min`, 24, 79);
+  // Reconnections so far (count of reentries among aircraft up to this frame)
+  if (lastParams.toleranceEnabled) {
+    let recSoFar = 0;
+    for (let i = 0; i < n; i++) {
+      const v = visitsArr[i] || 0;
+      if (statuses[i] === 'waiting' && v >= 1) recSoFar += v;       // queued for re-entry (count past completed visits)
+      else if (statuses[i] === 'refueling' && v >= 2) recSoFar += (v - 1);
+      else if (statuses[i] === 'done' && v >= 2) recSoFar += (v - 1);
+    }
+    ctx.fillStyle = '#eadf72';
+    ctx.fillText(`RECONEXÕES ${recSoFar}`, 24, 95);
+  }
+  ctx.restore();
+
+  // Status badge top-right
+  let statusText = '— em operação —';
+  let statusColor = '#8b95a7';
+  if (vizTime >= lastResult.finalT - 0.01) {
+    if (lastResult.allDone) { statusText = '✓ MISSÃO CONCLUÍDA'; statusColor = '#5ee07f'; }
+    else if (lastResult.deadlock) { statusText = '✗ DEADLOCK'; statusColor = '#ff5a5a'; }
+    else if (lastResult.bingoFail) { statusText = '✗ BINGO FUEL'; statusColor = '#ff5a5a'; }
+    else { statusText = '⏱ TEMPO EXCEDIDO'; statusColor = '#ffb13b'; }
+  }
+  ctx.fillStyle = statusColor;
+  ctx.font = "bold 10px 'IBM Plex Mono', monospace";
+  ctx.textAlign = 'right';
+  ctx.fillText(statusText, W - 10, 16);
+}
+
+function tickViz(now) {
+  if (!vizPlaying) return;
+  const realDt = (now - vizLastFrame) / 1000;
+  vizLastFrame = now;
+  vizTime += realDt * vizSpeed;  // vizSpeed = simulation minutes per real second
+  if (vizTime >= lastResult.finalT) {
+    vizTime = lastResult.finalT;
+    vizPlaying = false;
+    $('vizPlayBtn').textContent = '▶ Play';
+  }
+  $('vizScrubber').value = (vizTime / lastResult.finalT) * 1000;
+  $('vizTime').textContent = `t = ${vizTime.toFixed(1)} min`;
+  drawViz();
+  if (vizPlaying) requestAnimationFrame(tickViz);
+}
+
+$('vizPlayBtn').addEventListener('click', () => {
+  if (!lastResult) return;
+  if (vizPlaying) {
+    vizPlaying = false;
+    $('vizPlayBtn').textContent = '▶ Play';
+  } else {
+    if (vizTime >= lastResult.finalT - 0.01) vizTime = 0;
+    vizPlaying = true;
+    vizLastFrame = performance.now();
+    $('vizPlayBtn').textContent = '⏸ Pause';
+    requestAnimationFrame(tickViz);
+  }
+});
+
+$('vizResetBtn').addEventListener('click', () => {
+  vizPlaying = false;
+  vizTime = 0;
+  $('vizPlayBtn').textContent = '▶ Play';
+  $('vizScrubber').value = 0;
+  $('vizTime').textContent = 't = 0.0 min';
+  drawViz();
+});
+
+$('vizScrubber').addEventListener('input', () => {
+  if (!lastResult) return;
+  vizTime = (+$('vizScrubber').value / 1000) * lastResult.finalT;
+  $('vizTime').textContent = `t = ${vizTime.toFixed(1)} min`;
+  drawViz();
+});
+
+$('vizSpeed').addEventListener('change', () => {
+  vizSpeed = +$('vizSpeed').value;
+});
+
+window.addEventListener('resize', () => { drawViz(); });
+
+// ====== THRESHOLD ANALYSIS ======
+function runThreshold() {
+  const baseP = readParams();
+  const userMax = baseP.maxTime;            // limite operacional (consistente para todo N)
+  const N_MAX = 20;
+  const CAP = Math.max(userMax * 4, 2000);  // teto generoso só para distinguir "lento" de "impossível"
+
+  // A varredura usa SEMPRE a config uniforme (modelo de frota homogênea).
+  const massU = $('uniformMassUnit').value, flowU = $('uniformFlowUnit').value;
+  const tmpl = {
+    initial: toKg(+$('uniformInitial').value, massU),
+    target: toKg(+$('uniformTarget').value, massU),
+    consumption: toKgMin(+$('uniformConsumption').value, flowU),
+    consumptionContact: toKgMin(+$('uniformConsumptionContact').value, flowU),
+    toleranceValue: toKg(+$('uniformTolerance').value, massU)
+  };
+  const mkP = (n, mt) => ({ ...baseP, maxTime: mt, aircraft: Array.from({ length: n }, () => ({ ...tmpl })) });
+  // menor combustível atingido por aeronave FORA de contato, menos o bingo
+  const marginToBingo = (r) => {
+    let m = Infinity; const S = r.hist.statuses, F = r.hist.fuel;
+    for (let k = 0; k < S.length; k++) for (let i = 0; i < S[k].length; i++)
+      if (S[k][i] !== 'refueling') m = Math.min(m, F[i][k]);
+    return isFinite(m) ? m - baseP.bingoFuel : null;
+  };
+
+  const sweep = [];
+  for (let n = 1; n <= N_MAX; n++) {
+    // Passo A — dentro do tempo do usuário
+    const a = simulate(mkP(n, userMax));
+    let state, reason = null, time = a.finalT, recon = a.reconnects, margin = marginToBingo(a);
+    if (a.allDone) state = 'ok';
+    else if (a.deadlock) { state = 'physical'; reason = 'Deadlock (pod)'; }
+    else if (a.bingoFail) { state = 'physical'; reason = 'Bingo fuel'; }
+    else {
+      // Não fechou no tempo do usuário — Passo B com teto generoso para classificar
+      const b = simulate(mkP(n, CAP));
+      if (b.allDone) { state = 'overtime'; reason = 'Excede tempo'; time = b.finalT; recon = b.reconnects; margin = marginToBingo(b); }
+      else if (b.deadlock) { state = 'physical'; reason = 'Deadlock (pod)'; time = b.finalT; }
+      else if (b.bingoFail) { state = 'physical'; reason = 'Bingo fuel'; time = b.finalT; }
+      else { state = 'noconv'; reason = 'Não converge'; time = userMax; }
+    }
+    sweep.push({ n, state, reason, time, recon, margin });
+  }
+
+  // Threshold verdadeiro: maior N tal que TODO n ≤ N é 'ok' (bloco contínuo desde N=1)
+  let maxFeasibleN = 0;
+  for (const s of sweep) { if (s.state === 'ok') maxFeasibleN = s.n; else break; }
+  const firstBad = sweep.find(s => s.state !== 'ok');
+  const nonMono = firstBad ? sweep.slice(firstBad.n).some(s => s.state === 'ok') : false;
+  const atMax = sweep.find(s => s.n === maxFeasibleN);
+
+  // ---- Resumo ----
+  $('thresholdPanel').style.display = 'block';
+  $('thMaxN').textContent = maxFeasibleN;
+  $('thMaxTime').innerHTML = atMax ? atMax.time.toFixed(1) + '<span class="unit">min</span>' : '—';
+  $('thFailReason').innerHTML = firstBad
+    ? `${firstBad.reason} <span style="color:var(--text-dim)">(N=${firstBad.n})</span>`
+    : `Nenhuma falha até N=${N_MAX}`;
+  $('thMargin').innerHTML = (atMax && atMax.margin !== null) ? Math.round(atMax.margin) + '<span class="unit">kg</span>' : '—';
+  $('thRecon').textContent = atMax ? atMax.recon : '—';
+
+  // ---- Avisos ----
+  const notes = [];
+  if (mode === 'per') notes.push('⚠ A varredura usa a configuração UNIFORME (painel 1). Sua frota está em modo "por aeronave", que foi ignorado aqui.');
+  if (nonMono) notes.push('⚠ Feasibilidade não-monotônica: existe N viável depois de um N inviável. O "máx." considera o maior bloco contínuo a partir de N=1.');
+  if (atMax && atMax.margin !== null && atMax.margin < Math.max(50, baseP.bingoFuel * 0.15)) notes.push(`⚠ Margem ao bingo apertada no máx. (${Math.round(atMax.margin)} kg) — pouca folga operacional.`);
+  $('thNotes').innerHTML = notes.join('<br>');
+
+  // ---- Gráfico (cor por estado) ----
+  const fillOf = { ok: 'rgba(94,224,127,0.6)', overtime: 'rgba(255,177,59,0.6)', physical: 'rgba(255,90,90,0.6)', noconv: 'rgba(215,123,255,0.6)' };
+  const lineOf = { ok: '#5ee07f', overtime: '#ffb13b', physical: '#ff5a5a', noconv: '#d77bff' };
+  const stateLabel = { ok: '✓ viável no tempo', overtime: '⏱ fecha além do tempo', physical: '✗ ', noconv: '✗ não converge' };
+  const ctx = $('thresholdChart').getContext('2d');
+  if (thresholdChart) thresholdChart.destroy();
+  thresholdChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sweep.map(s => s.n),
+      datasets: [{
+        label: 'Tempo total (min)',
+        data: sweep.map(s => s.time),
+        backgroundColor: sweep.map(s => fillOf[s.state]),
+        borderColor: sweep.map(s => lineOf[s.state]),
+        borderWidth: 1.5
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a2230', borderColor: '#2a3445', borderWidth: 1,
+          titleFont: { family: 'IBM Plex Mono', size: 11 }, bodyFont: { family: 'IBM Plex Mono', size: 11 },
+          callbacks: {
+            title: items => `N = ${items[0].label} aeronaves`,
+            label: ctx => {
+              const s = sweep[ctx.dataIndex];
+              const parts = [`Tempo: ${s.time.toFixed(1)} min`, s.state === 'physical' ? '✗ ' + s.reason : stateLabel[s.state]];
+              if (s.margin !== null) parts.push(`Margem bingo: ${Math.round(s.margin)} kg`);
+              if (s.recon) parts.push(`Reconexões: ${s.recon}`);
+              return parts;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { title: { display: true, text: 'Número de aeronaves (N)', color: '#8b95a7', font: { family: 'IBM Plex Mono', size: 11 } }, ticks: { color: '#8b95a7', font: { family: 'IBM Plex Mono', size: 10 } }, grid: { display: false } },
+        y: { title: { display: true, text: 'Tempo total (min)', color: '#8b95a7', font: { family: 'IBM Plex Mono', size: 11 } }, ticks: { color: '#8b95a7', font: { family: 'IBM Plex Mono', size: 10 } }, grid: { color: 'rgba(42,52,69,0.5)' }, beginAtZero: true }
+      }
+    }
+  });
+}
+$('thresholdBtn').addEventListener('click', runThreshold);
+
+// Auto-run on load — restaura o estado da sessão (se houver); na primeira
+// visita da sessão, abre com o cenário de exemplo "Nominal" já carregado.
+window.addEventListener('load', () => {
+  if (loadScenarioLocal()) {
+    // Sessão já existente: vai direto ao simulador e re-roda o estado salvo.
+    activateTab('sim');
+    $('runBtn').click();
+  } else {
+    // Primeira visita da sessão: abre na Introdução e deixa o simulador limpo
+    // (campos com valores padrão, sem rodar — o aviso de estado vazio aparece).
+    activateTab('intro');
+  }
+});
+</script>
+</body>
+</html>

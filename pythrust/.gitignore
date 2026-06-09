@@ -1,0 +1,19 @@
+# python files
+*.pyc
+__pycache__/
+# virtual environment
+venv/
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+
+# output folders
+*_out/
+
+.antigravitycli/
+scratch/
+
+# Test and Coverage
+.coverage
+.pytest_cache/
+htmlcov/

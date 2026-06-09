@@ -2,7 +2,7 @@
 
 Ferramenta web para simular reabastecimento aéreo em ciranda: uma aeronave **reabastecedora** atende várias **reabastecidas**, modelando os fluxos pod→asa e asa→aeronave, o consumo em espera, os ciclos de pausa/retomada e a análise de threshold operacional.
 
-O projeto agora está preparado para deploy na **Vercel** como aplicação estática com build em Node.
+O projeto agora está migrado para **Next.js** com App Router, paleta clara inspirada no ITA e uma primeira camada de integração com o **PyThrust** para evoluir de simulação AAR para uma plataforma de missão AAR + UAV/MDO.
 
 ## Rodar localmente
 
@@ -10,7 +10,7 @@ O projeto agora está preparado para deploy na **Vercel** como aplicação está
 npm run dev
 ```
 
-Acesse `http://127.0.0.1:4173`.
+Acesse `http://localhost:3000`.
 
 ## Build
 
@@ -19,7 +19,7 @@ npm run build
 npm run preview
 ```
 
-O build gera a pasta `dist/`, usada pela Vercel.
+O build Next está configurado com `output: 'export'` e gera a pasta `out/` para publicação estática.
 
 ## Deploy na Vercel
 
@@ -27,12 +27,12 @@ O build gera a pasta `dist/`, usada pela Vercel.
 2. Na Vercel, clique em **Add New Project** e importe o repositório.
 3. A Vercel lerá o `vercel.json`:
    - Build Command: `npm run build`
-   - Output Directory: `dist`
+   - Framework: `nextjs`
 4. Publique.
 
 ## Como abrir
 
-Abra **`index.html`** localmente ou rode `npm run dev`. Na primeira visita você cai na aba **Introdução**; a aba **Simulador** é a ferramenta. Carregue um **cenário de exemplo** (painel 3) para ver tudo funcionando na hora.
+Rode `npm run dev`. A página principal apresenta a plataforma integrada AAR + UAV; a rota **`/simulador`** abre o simulador AAR preservado como módulo embarcado.
 
 > O estado é guardado apenas na sessão do navegador (`sessionStorage`) e descartado ao fechar a aba — nada é gravado em servidor.
 
@@ -40,12 +40,23 @@ Abra **`index.html`** localmente ou rode `npm run dev`. Na primeira visita você
 
 | Caminho | O quê |
 |---|---|
-| `index.html` | Entrada principal da aplicação para Vercel |
-| `simulador_aar.html` | Cópia standalone da aplicação inteira (HTML + CSS + JS, Chart.js via CDN) |
-| `scripts/build.mjs` | Build estático para gerar `dist/` |
-| `scripts/dev-server.mjs` | Servidor local sem dependências externas |
+| `src/app/` | Rotas Next.js (`/` e `/simulador`) |
+| `src/components/` | Componentes React da plataforma |
+| `src/data/platform.ts` | Dados da visão AAR + UAV/PyThrust |
+| `public/simulador-aar.html` | Simulador AAR legado preservado para iframe |
+| `simulador_aar.html` | Cópia standalone da aplicação original evoluída |
+| `pythrust/` | Projeto PyThrust para futura ponte Python/MDO |
+| `scripts/dev-server.mjs` | Preview local de export estático (`out/`) |
 | `vercel.json` | Configuração de build/deploy na Vercel |
 | `README.md` | Este guia do usuário |
+
+## Integração AAR + PyThrust
+
+A primeira etapa da união dos projetos cria uma plataforma comum:
+
+- **AAR Engine**: simula reabastecimento em ciranda, pausas, bingo fuel, threshold e ontologia operacional.
+- **PyThrust**: preservado em `pythrust/` para análise de propulsão elétrica, calibração, busca em bancos de motores/hélices e MDO com OpenMDAO.
+- **Próxima extração**: mover o motor de simulação do HTML para módulos TypeScript testáveis e criar uma ponte Python/API para executar rotinas PyThrust.
 
 ---
 
