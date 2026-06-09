@@ -1,3 +1,4 @@
+import { AarNativePanel } from '@/components/AarNativePanel';
 import { AarSimulationModule } from '@/components/AarSimulationModule';
 import { AppHeader } from '@/components/AppHeader';
 
@@ -17,11 +18,12 @@ export default function SimulatorPage() {
         </div>
         <aside className="run-state">
           <span>estado do módulo</span>
-          <strong>operacional</strong>
-          <small>Simulador herdado integrado à rota AAR</small>
+          <strong>migração gradual</strong>
+          <small>Painel nativo conectado ao motor TypeScript · legado preservado abaixo</small>
         </aside>
       </section>
 
+      <AarNativePanel />
       <AarSimulationModule compact />
 
       <footer className="footer">

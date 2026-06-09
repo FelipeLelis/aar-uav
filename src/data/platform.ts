@@ -34,11 +34,11 @@ export const pythrustModules = [
 export const roadmap = [
   {
     title: 'Motor AAR',
-    text: 'Criado em TypeScript como função pura para eventos, pausa, fila e bingo. Próximo passo: substituir gradualmente o legado embarcado.',
+    text: 'Criado em TypeScript como função pura para eventos, pausa, fila e bingo. O painel nativo já consome esse motor.',
   },
   {
     title: 'Visualização',
-    text: 'O UAV já possui gráficos e cena 3D própria; a próxima etapa é conectar a cena 3D AAR aos eventos do novo motor.',
+    text: 'UAV e AAR possuem cenas 3D próprias; a próxima etapa é substituir o iframe legado por componentes React completos.',
   },
   {
     title: 'Ponte PyThrust',
