@@ -1,10 +1,38 @@
 # Simulador AAR — Reabastecimento em Voo
 
-Ferramenta web (HTML único, sem backend) para simular reabastecimento aéreo em ciranda: uma aeronave **reabastecedora** atende várias **reabastecidas**, modelando os fluxos pod→asa e asa→aeronave, o consumo em espera, os ciclos de pausa/retomada e a análise de threshold operacional.
+Ferramenta web para simular reabastecimento aéreo em ciranda: uma aeronave **reabastecedora** atende várias **reabastecidas**, modelando os fluxos pod→asa e asa→aeronave, o consumo em espera, os ciclos de pausa/retomada e a análise de threshold operacional.
+
+O projeto agora está preparado para deploy na **Vercel** como aplicação estática com build em Node.
+
+## Rodar localmente
+
+```bash
+npm run dev
+```
+
+Acesse `http://127.0.0.1:4173`.
+
+## Build
+
+```bash
+npm run build
+npm run preview
+```
+
+O build gera a pasta `dist/`, usada pela Vercel.
+
+## Deploy na Vercel
+
+1. Suba este repositório para o GitHub.
+2. Na Vercel, clique em **Add New Project** e importe o repositório.
+3. A Vercel lerá o `vercel.json`:
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+4. Publique.
 
 ## Como abrir
 
-Abra **`simulador_aar.html`** em qualquer navegador moderno — não há instalação nem servidor. Na primeira visita você cai na aba **Introdução**; a aba **Simulador** é a ferramenta. Carregue um **cenário de exemplo** (painel 3) para ver tudo funcionando na hora.
+Abra **`index.html`** localmente ou rode `npm run dev`. Na primeira visita você cai na aba **Introdução**; a aba **Simulador** é a ferramenta. Carregue um **cenário de exemplo** (painel 3) para ver tudo funcionando na hora.
 
 > O estado é guardado apenas na sessão do navegador (`sessionStorage`) e descartado ao fechar a aba — nada é gravado em servidor.
 
@@ -12,7 +40,11 @@ Abra **`simulador_aar.html`** em qualquer navegador moderno — não há instala
 
 | Caminho | O quê |
 |---|---|
-| `simulador_aar.html` | A aplicação inteira (HTML + CSS + JS, Chart.js via CDN) |
+| `index.html` | Entrada principal da aplicação para Vercel |
+| `simulador_aar.html` | Cópia standalone da aplicação inteira (HTML + CSS + JS, Chart.js via CDN) |
+| `scripts/build.mjs` | Build estático para gerar `dist/` |
+| `scripts/dev-server.mjs` | Servidor local sem dependências externas |
+| `vercel.json` | Configuração de build/deploy na Vercel |
 | `README.md` | Este guia do usuário |
 
 ---
